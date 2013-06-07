@@ -564,9 +564,9 @@ v1.1
 - Fixed ERadius
 - Fixed EParticle detection
 - DERP, I feel retarded reading through my own code again...
-- Added Q with a single minion in between.1
+- Added Q with a single minion in between.
 - Added move to mouse during PewPewPewPewPew
-- Tweaked Auto E Shit.2
+- Tweaked Auto E Shit.
 - Increased Q Width
 - Fixed lack of collision detection when the target was snared. /facepalm
 
