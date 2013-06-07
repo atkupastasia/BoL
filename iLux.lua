@@ -566,7 +566,7 @@ v1.1
 - DERP, I feel retarded reading through my own code again...
 - Added Q with a single minion in between.1
 - Added move to mouse during PewPewPewPewPew
-- Tweaked Auto E Shit.
+- Tweaked Auto E Shit.2
 - Increased Q Width
 - Fixed lack of collision detection when the target was snared. /facepalm
 
