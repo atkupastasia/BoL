@@ -77,7 +77,7 @@ local jungleObjects = {
 }
 
 function OnLoad()
-	iLuxConfig = scriptConfig("iLux v1.1.3", "iLux")
+	iLuxConfig = scriptConfig("iLux v1.2", "iLux")
 
 	iLuxConfig:addParam("pewpew","PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
 	iLuxConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
