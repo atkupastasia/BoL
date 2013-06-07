@@ -576,7 +576,7 @@ v1.1.1
 v1.1.2
 - Tiny tiny minuscule tweaks. 
 
-v1.3
+v1.2
 - Tweaked prediction
 - ZOMGWTFFTWRAINBOWSTEALINGBUFFS
 
