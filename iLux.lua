@@ -69,15 +69,15 @@ local items = {
 }
 
 local jungleObjects = {
-	Vilemaw = {object = nil, name = "TT_Spiderboss7.1.1"},
-	Baron = {object = nil, name = "Worm12.1.1"},
-	Dragon = {object = nil, name = "Dragon6.1.1"},
-	Golem1 = {object = nil, name = "AncientGolem1.1.1"},
-	Golem2 = {object = nil, name = "AncientGolem7.1.1"},
+	["TT_Spiderboss7.1.1"] = {object = nil, isCamp = true},
+	["Worm12.1.1"] = {object = nil, isCamp = true},
+	["Dragon6.1.1"] = {object = nil, isCamp = true},
+	["AncientGolem1.1.1"] = {object = nil, isCamp = true},
+	["AncientGolem7.1.1"] = {object = nil, isCamp = true},
 }
 
 function OnLoad()
-	iLuxConfig = scriptConfig("iLux v1.1", "iLux")
+	iLuxConfig = scriptConfig("iLux v1.1.3", "iLux")
 
 	iLuxConfig:addParam("pewpew","PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
 	iLuxConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
@@ -329,6 +329,19 @@ function AutoTriggerE()
 	end
 end
 
+function StealTzeBuffs()
+	for _, jungleMob in pairs(jungleObjects) do
+		if jungleMob.isCamp and jungleMob.object ~= nil and not jungleMob.object.dead and jungleMob.valid then
+			if GetDistance(jungleMob.object) < QRange and (myHero:CanUseSpell(_Q) == READY and getDmg("Q", jungleMob.object, myHero)) + (myHero:CanUseSpell(_E) == READY and getDmg("E", jungleMob.object, myHero)) > jungleMob.object.health then
+				CastSpell(_Q, jungleMob.object.x, jungleMob.object.z)
+				CastSpell(_E, not EParticle and jungleMob.object.x or nil, not EParticle and jungleMob.object.z or nil)
+			elseif GetDistance(jungleMob.object) < RRange and (myHero:CanUseSpell(_R) == READY and getDmg("R", jungleMob.object, myHero)) > jungleMob.object.health then
+				CastSpell(_R, jungleMob.object.x, jungleMob.object.z)
+			end
+		end
+	end
+end
+
 function GetQPrediction(enemy)
 	local _,_,QPos = tpQ:GetHitChance(enemy) > minHitChance / 100 and tpQ:GetPrediction(enemy)
 	local willCollide, collideArray = QPos ~= nil and tpQCollision:GetMinionCollision(myHero, QPos)
@@ -340,10 +353,8 @@ function OnCreateObj(object)
 		EParticle = object
 	elseif object.name:find("LuxLightBinding_tar") then
 		QStatus = 2
-	else
-		for _, jungleMob in pairs(jungleObjects) do
-			--if obj ~= nil and obj.name == mob.name then mob.obj = nil end
-		end
+	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
+		jungleObjects[object.name] = object
 	end
 end
 
@@ -352,9 +363,10 @@ function OnDeleteObj(object)
 		EParticle = nil
 		TriggerEOnLand = false
 		TriggerEOnLandFarm = false
-	end
-	if object.name:find("LuxLightBinding_mis") then
+	elseif object.name:find("LuxLightBinding_mis") then
 		QStatus = 2
+	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
+		jungleObjects[object.name] = nil
 	end
 end
 
@@ -563,5 +575,9 @@ v1.1.1
 
 v1.1.2
 - Tiny tiny minuscule tweaks. 
+
+v1.3
+- Tweaked prediction
+- ZOMGWTFFTWRAINBOWSTEALINGBUFFS
 
 ]]-- <INSERT_INCREDIBLE_FUCKING_RAINBOWS_UNICORN_HERE>
