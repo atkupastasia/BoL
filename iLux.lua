@@ -30,7 +30,7 @@ local QSpeed = 1175
 local ERadius = 275
 local ESpeed = 1300
 local RWidth = 250
-local RSpeed = 3000
+local RSpeed = math.huge
 
 --[[ Script Variables ]]--
 
@@ -78,7 +78,7 @@ local jungleObjects = {
 }
 
 function OnLoad()
-	iLuxConfig = scriptConfig("iLux v1.2", "iLux")
+	iLuxConfig = scriptConfig("iLux - Penta Rainbows", "iLux")
 
 	iLuxConfig:addParam("pewpew","PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
 	iLuxConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
@@ -600,5 +600,7 @@ v1.1.2
 v1.2
 - Tweaked prediction
 - ZOMGWTFFTWRAINBOWSTEALINGBUFFS
+
+ No need for a changelog anymore. I now haz Github! :D
 
 ]]-- <INSERT_INCREDIBLE_FUCKING_RAINBOWS_UNICORN_HERE>
