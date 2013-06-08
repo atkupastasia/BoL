@@ -335,7 +335,7 @@ end
 
 function StealTzeBuffs()
 	for _, jungleMob in pairs(jungleObjects) do
-		if jungleMob and jungleMob.isCamp andjungleMob.object ~= nil and jungleMob.object.valid and not jungleMob.object.dead  then
+		if jungleMob and jungleMob.isCamp and jungleMob.object ~= nil and jungleMob.object.valid and not jungleMob.object.dead  then
 			--[[if GetDistance(jungleMob.object) < QRange and (myHero:CanUseSpell(_Q) == READY and getDmg("Q", jungleMob.object, myHero)) + (myHero:CanUseSpell(_E) == READY and getDmg("E", jungleMob.object, myHero)) > jungleMob.object.health then
 				CastSpell(_Q, jungleMob.object.x, jungleMob.object.z)
 				CastSpell(_E, not EParticle and jungleMob.object.x or nil, not EParticle and jungleMob.object.z or nil)
