@@ -125,8 +125,6 @@ function PewPew()
 					end	
 				end
 			end
-		else
-			EClaw = nil
 		end
 		if GetDistance(ts.target) < QRange then
 			local tempDamage = calculateDamage(ts.target, true, true)
