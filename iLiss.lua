@@ -9,7 +9,7 @@ local HK2 = string.byte("T")
 local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used.
 local SafeBet = 20 -- % 
-local minHitChance = 70 -- %
+local minHitChance = 0.7
 
 --[[ Constants ]]--
 
@@ -112,8 +112,10 @@ end
 
 function PewPew()
 	if ValidTarget(ts.target) then
-		local _,_,QPos = tpQ:GetHitChance(ts.target) > minHitChance / 100 and tpQ:GetPrediction(ts.target)
-		local _,_,EPos = tpE:GetHitChance(ts.target) > minHitChance / 100 and tpE:GetPrediction(ts.target)
+		local _,_,tempQPos = tpQ:GetPrediction(ts.target)
+		local QPos = tpQ:GetHitChance(ts.target) > minHitChance and tempQPos or nil
+		local _,_,tempEPos = tpE:GetPrediction(ts.target)
+		local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
 		if EClaw ~= nil and EClaw.valid and not iLissConfig.ETeleManual then
 			if myHero:CanUseSpell(_E) == READY and (myHero:CanUseSpell(_Q) == READY or myHero:CanUseSpell(_W) == READY or myHero:CanUseSpell(_R) == READY) then
 				if not UnderTurret(EClaw) then
@@ -172,7 +174,8 @@ end
 
 function Poke()
 	if ValidTarget(ts.target) then
-		local _,_,QPos = tpQ:GetHitChance(ts.target) > minHitChance / 100 and tpQ:GetPrediction(ts.target)
+		local _,_,tempQPos = tpQ:GetPrediction(ts.target)
+		local QPos = tpQ:GetHitChance(ts.target) > minHitChance and tempQPos or nil
 		if QPos then
 			CastSpell(_Q, QPos.x, QPos.z)
 		end
@@ -224,8 +227,10 @@ function updateItems()
 end
 
 function calculateDamage(enemy, checkRange, readyCheck)		
-	local _,_,QPos = tpQ:GetHitChance(ts.target) > minHitChance / 100 and tpQ:GetPrediction(ts.target)
-	local _,_,EPos = tpE:GetHitChance(ts.target) > minHitChance / 100 and tpE:GetPrediction(ts.target)
+	local _,_,tempQPos = tpQ:GetPrediction(enemy)
+	local QPos = tpQ:GetHitChance(enemy) > minHitChance and tempQPos or nil
+	local _,_,tempEPos = tpE:GetPrediction(enemy)
+	local EPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
 
 	local returnDamage = {}
 	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and (QPos and GetDistance({x = QPos.x, z = QPos.z}) < QRange or not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
