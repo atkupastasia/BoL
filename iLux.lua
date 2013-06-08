@@ -110,10 +110,8 @@ function OnLoad()
 
 	for i = 0, objManager.maxObjects do
 		local object = objManager:getObject(i)
-		for _, jungleMob in pairs(jungleObjects) do
-			if jungleMob and jungleMob.valid and object.name:find(jungleMob.name) then
-				jungleMob.object = object
-			end
+		if object and object.valid and jungleObjects[object.name] and jungleObjects[object.name].isCamp then
+			jungleObjects[object.name].object = object
 		end
 	end
 end
