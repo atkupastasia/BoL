@@ -25,7 +25,7 @@ local RRange = 3000
 local igniteRange = 600
 local defaultItemRange = 700
 
-local QWidth = 40
+local QWidth = 80
 local QSpeed = 1175
 local ERadius = 275
 local ESpeed = 1300
