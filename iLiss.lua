@@ -9,6 +9,7 @@ local HK2 = string.byte("T")
 local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used.
 local SafeBet = 20 -- % 
+local minHitChance = 70 -- %
 
 --[[ Constants ]]--
 
@@ -28,8 +29,8 @@ local EDelay = 0.250
 --[[ Script Variables ]]--
 
 local ts = TargetSelector(TARGET_LESS_CAST,QRange,DAMAGE_MAGIC,false)
-local tpQ = TargetPredictionVIP(QRange,QSpeed,QDelay)
-local tpE = TargetPredictionVIP(ERange,ESpeed,EDelay)
+local tpQ = TargetPredictionVIP(QRange, QSpeed, QDelay, 40)
+local tpE = TargetPredictionVIP(ERange, ESpeed, EDelay, 80)
 
 local igniteSlot = nil
 local EClaw = nil
@@ -111,8 +112,8 @@ end
 
 function PewPew()
 	if ValidTarget(ts.target) then
-		local QPos,_,_ = tpQ:GetPrediction(ts.target)
-		local EPos,_,_ = tpE:GetPrediction(ts.target)
+		local _,_,QPos = tpQ:GetHitChance(ts.target) > minHitChance / 100 and tpQ:GetPrediction(ts.target)
+		local _,_,EPos = tpE:GetHitChance(ts.target) > minHitChance / 100 and tpE:GetPrediction(ts.target)
 		if EClaw ~= nil and EClaw.valid and not iLissConfig.ETeleManual then
 			if myHero:CanUseSpell(_E) == READY and (myHero:CanUseSpell(_Q) == READY or myHero:CanUseSpell(_W) == READY or myHero:CanUseSpell(_R) == READY) then
 				if not UnderTurret(EClaw) then
@@ -173,7 +174,7 @@ end
 
 function Poke()
 	if ValidTarget(ts.target) then
-		local QPos,_,_ = tpQ:GetPrediction(ts.target)
+		local _,_,QPos = tpQ:GetHitChance(ts.target) > minHitChance / 100 and tpQ:GetPrediction(ts.target)
 		if QPos then
 			CastSpell(_Q, QPos.x, QPos.z)
 		end
@@ -224,9 +225,10 @@ function updateItems()
 	items["WOOGLETS"].ready = (items["WOOGLETS"].slot and myHero:CanUseSpell(items["WOOGLETS"].slot) == READY or false)
 end
 
-function calculateDamage(enemy, checkRange, readyCheck)
-	local QPos,_,_ = tpQ:GetPrediction(enemy)
-	local EPos,_,_ = tpE:GetPrediction(enemy)
+function calculateDamage(enemy, checkRange, readyCheck)		
+	local _,_,QPos = tpQ:GetHitChance(ts.target) > minHitChance / 100 and tpQ:GetPrediction(ts.target)
+	local _,_,EPos = tpE:GetHitChance(ts.target) > minHitChance / 100 and tpE:GetPrediction(ts.target)
+
 	local returnDamage = {}
 	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and (QPos and GetDistance({x = QPos.x, z = QPos.z}) < QRange or not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
 	returnDamage.Wbase = (( (myHero:CanUseSpell(_W) == READY or not readyCheck) and (GetDistance(enemy) < WRange or not checkRange) and getDmg("W", enemy, myHero)) or 0 )
