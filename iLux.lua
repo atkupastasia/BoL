@@ -12,7 +12,7 @@ local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used but still here.
 local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
-local minHitChance = 0.7
+local minHitChance = 0.5
 
 --[[ Constants ]]--
 
@@ -297,8 +297,8 @@ function AutoUlt()
 					pingTimer[enemy.charName] = GetTickCount()
 				end
 				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt then
-					local _,_,tempRPos = tpE:GetPrediction(enemy)
-					local RPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
+					local _,_,tempRPos = tpR:GetPrediction(enemy)
+					local RPos = tpE:GetHitChance(enemy) > minHitChance and tempRPos or nil
 					if RPos then
 						CastSpell(_R, RPos.x, RPos.z)
 						return
@@ -442,8 +442,21 @@ function OnDraw()
 		if myHero:CanUseSpell(_Q) == READY or myHero:CanUseSpell(_E) == READY then
 			DrawCircle(myHero.x, myHero.y, myHero.z, QRange, 0xFF80FF00)
 		end
+
 		if myHero:CanUseSpell(_R) == READY then
 			DrawCircle(myHero.x, myHero.y, myHero.z, RRange, 0xFF80FF00)
+		end
+
+		if myHero:CanUseSpell(_Q) == READY and ValidTarget(ts.target) and GetQPrediction(ts.target) ~= nil then
+			tpQCollision:DrawCollision(myHero, GetQPrediction(ts.target))
+		end
+
+		if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
+			local _,_,tempEPos = tpE:GetPrediction(ts.target)
+			local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
+			if EPos then
+				DrawCircle(EPos.x, EPos.y, EPos.z, 275, 0xFFFF0000)
+			end
 		end
 
 		if ValidTarget(ts.target) then
