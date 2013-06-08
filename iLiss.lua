@@ -9,7 +9,7 @@ local HK2 = string.byte("T")
 local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used.
 local SafeBet = 20 -- % 
-local minHitChance = 0.7
+local minHitChance = 0.5
 
 --[[ Constants ]]--
 
@@ -36,7 +36,6 @@ local igniteSlot = nil
 local EClaw = nil
 local EClawRemoved = 0
 local enemyMinions = {}
-local towers = {}
 local updateTextTimers = {}
 
 local items = {
@@ -83,13 +82,6 @@ function OnLoad()
 
 	igniteSlot = ((myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") and SUMMONER_1) or (myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") and SUMMONER_2) or nil)
 	enemyMinions = minionManager(MINION_ENEMY, ERange, myHero, MINION_SORT_HEALTH_ASC)
-
-	for i = 1, objManager.maxObjects do
-		local object = objManager:getObject(i)
-		if object ~= nil and object.type == "obj_AI_Turret" and object.team ~= myHero.team then
-			table.insert(towers,object)
-		end
-	end
 end
 
 function OnTick()
