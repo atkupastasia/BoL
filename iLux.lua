@@ -12,7 +12,7 @@ local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used but still here.
 local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
-local minHitChance = 70 -- %
+local minHitChance = 0.1 -- %
 
 --[[ Constants ]]--
 
@@ -145,8 +145,9 @@ end
 
 function PewPew()
 	if ValidTarget(ts.target) then
-		local _,_,QPos = GetQPrediction(ts.target)
-		local _,_,EPos = tpE:GetHitChance(ts.target) > minHitChance / 100 and tpE:GetPrediction(ts.target)
+		local QPos = GetQPrediction(ts.target)
+		local _,_,tempEPos = tpE:GetPrediction(ts.target)
+		local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
 		if ts.target.canMove and myHero:CanUseSpell(_Q) == READY and QPos then
 			CastSpell(_Q, QPos.x, QPos.z)
 			QStatus = 1
@@ -227,7 +228,8 @@ end
 function Poke()
 	if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
 		if not EParticle then
-			local _,_,EPos = tpE:GetHitChance(ts.target) > minHitChance / 100 and tpE:GetPrediction(ts.target)
+			local _,_,tempEPos = tpE:GetPrediction(ts.target)
+			local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
 			if EPos then
 				CastSpell(_E, EPos.x, EPos.z)
 				TriggerEOnLand = true
@@ -295,7 +297,8 @@ function AutoUlt()
 					pingTimer[enemy.charName] = GetTickCount()
 				end
 				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt then
-					local _,_,RPos = tpR:GetHitChance(enemy) > minHitChance / 100 and tpR:GetPrediction(enemy)
+					local _,_,tempRPos = tpE:GetPrediction(enemy)
+					local RPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
 					if RPos then
 						CastSpell(_R, RPos.x, RPos.z)
 						return
@@ -343,7 +346,8 @@ function StealTzeBuffs()
 end
 
 function GetQPrediction(enemy)
-	local _,_,QPos = tpQ:GetHitChance(enemy) > minHitChance / 100 and tpQ:GetPrediction(enemy)
+	local _,_,tempQPos = tpQ:GetPrediction(enemy)
+	local QPos = tpQ:GetHitChance(enemy) > minHitChance and tempQPos or nil
 	local willCollide, collideArray = QPos ~= nil and tpQCollision:GetMinionCollision(myHero, QPos)
 	return (willCollide and (iLuxConfig.QWithSingleCollide and #collideArray > 1 or not iLuxConfig.QWithSingleCollide) and nil) or QPos
 end
@@ -385,8 +389,9 @@ function updateItems()
 end
 
 function calculateDamage(enemy, checkRange, readyCheck)
-	local _,_,QPos = GetQPrediction(enemy)
-	local _,_,EPos = tpE:GetHitChance(enemy) > minHitChance / 100 and tpE:GetPrediction(enemy)
+	local QPos = GetQPrediction(enemy)
+	local _,_,tempEPos = tpE:GetPrediction(enemy)
+	local EPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
 	local returnDamage = {}
 	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and (QPos and GetDistance({x = QPos.x, z = QPos.z}) < QRange or not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
 	--returnDamage.Wbase = (( (myHero:CanUseSpell(_W) == READY or not readyCheck) and (GetDistance(enemy) < WRange or not checkRange) and getDmg("W", enemy, myHero)) or 0 )
