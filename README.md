@@ -1,5 +1,5 @@
 Apple's Bot of Legends Repository
 
-Current Scripts
+Current Scripts:
 - iLux - Penta Rainbows
 - Icy iLiss
