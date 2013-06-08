@@ -246,7 +246,7 @@ function autoFarm()
 	local killableMinions = {}
 	local killablePoints = {}
 	for i, minion in ipairs(enemyMinions.objects) do
-		if ValidTarget(minion) and (TargetHaveBuff("luxilluminatingfraulein", minion) and getDmg("P", minion, myHero) + getDmg("E", minion, myHero) or getDmg("E", minion, myHero)) > minion.health then
+		if minion and minion.valid and ValidTarget(minion) and (TargetHaveBuff("luxilluminatingfraulein", minion) and getDmg("P", minion, myHero) + getDmg("E", minion, myHero) or getDmg("E", minion, myHero)) > minion.health then
 			table.insert(killableMinions, minion)
 			table.insert(killablePoints, Vector(minion))
 		end
