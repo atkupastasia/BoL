@@ -12,7 +12,7 @@ local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used but still here.
 local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
-local minHitChance = 0.5
+local minHitChance = 0.7
 local drawPrediction = true
 
 --[[ Constants ]]--
