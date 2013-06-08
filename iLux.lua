@@ -282,7 +282,7 @@ function autoFarm()
 		end
 	end
 	for i, minion in ipairs(killableMinions) do
-		if ValidTarget(minion) and (TargetHaveBuff("luxilluminatingfraulein", minion) and getDmg("P", minion, myHero) + getDmg("AD", minion, myHero) * 1.1 or getDmg("AD", minion, myHero) * 1.1) > minion.health then
+		if minion and minion.valid and ValidTarget(minion) and (TargetHaveBuff("luxilluminatingfraulein", minion) and getDmg("P", minion, myHero) + getDmg("AD", minion, myHero) * 1.1 or getDmg("AD", minion, myHero) * 1.1) > minion.health then
 			myHero:Attack(minion)
 			return
 		end
