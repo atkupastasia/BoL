@@ -349,7 +349,8 @@ end
 function GetQPrediction(enemy)
 	local _,_,tempQPos = tpQ:GetPrediction(enemy)
 	local QPos = tpQ:GetHitChance(enemy) > minHitChance and tempQPos or nil
-	local willCollide, collideArray = QPos ~= nil and tpQCollision:GetMinionCollision(myHero, QPos)
+	if QPos == nil then return nil end
+	local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
 	return (willCollide and (iLuxConfig.QWithSingleCollide and #collideArray > 1 or not iLuxConfig.QWithSingleCollide) and nil) or QPos
 end
 
