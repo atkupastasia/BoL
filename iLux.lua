@@ -38,7 +38,7 @@ local ts = TargetSelector(TARGET_LESS_CAST,QRange,DAMAGE_MAGIC,false)
 local tpQ = TargetPredictionVIP(QRange, QSpeed, 0.250, QWidth)
 local tpQCollision = Collision(QRange, QSpeed, 0.250, QWidth)
 local tpE = TargetPredictionVIP(ERange, ESpeed, 0.150, ERadius)
-local tpR = TargetPredictionVIP(RRange, RSpeed, 0.500, RWidth)
+local tpR = TargetPredictionVIP(RRange, RSpeed, 0.700, RWidth)
 
 local igniteSlot = nil
 local EParticle = nil
