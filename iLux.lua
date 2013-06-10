@@ -16,6 +16,7 @@ local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
 local minHitChance = 0.3
 local drawPrediction = true
+local OnlyEWhenQNotReadyAndTargetCanMove = false
 
 --[[ Constants ]]--
 
@@ -214,7 +215,7 @@ function PewPew()
 					CastSpell(_E)
 				end
 			end
-		elseif myHero:CanUseSpell(_E) == READY and EPos and QStatus ~= 3 then
+		elseif myHero:CanUseSpell(_E) == READY and EPos and QStatus ~= 3 and (OnlyEWhenQNotReadyAndTargetCanMove and myHero:CanUseSpell(_Q) ~= READY or not OnlyEWhenQNotReadyAndTargetCanMove) then
 			if not EParticle then
 				CastSpell(_E, EPos.x, EPos.z)
 				TriggerEOnLand = true
