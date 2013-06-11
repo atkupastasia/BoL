@@ -37,10 +37,10 @@ local itemsList = {
 function OnLoad()
 	iCCConfig = scriptConfig("iCass Classic", "iCass Classic")
 
-	iCCConfig:addParam("pewpew", "PewPew!", SCRIPT_PARAM_ONKEYDOWN, HK1)
-	iCCConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, HK2)
-	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONKEYTOGGLE, HK3)
-	iCCConfig:addParam("useItems", "Use Items", SCRIPT_PARAM_ONOFF)
+	iCCConfig:addParam("pewpew", "PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
+	iCCConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false,  HK2)
+	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONKEYTOGGLE, true, HK3)
+	iCCConfig:addParam("useItems", "Use Items", SCRIPT_PARAM_ONOFF, true)
 	iCCConfig:addParam("drawcircles","Draw Circles", SCRIPT_PARAM_ONOFF, true)
 
 	iCCConfig:permaShow("pewpew")
