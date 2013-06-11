@@ -39,7 +39,7 @@ function OnLoad()
 
 	iCCConfig:addParam("pewpew", "PewPew!", SCRIPT_PARAM_ONKEYDOWN, HK1)
 	iCCConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, HK2)
-	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONOFF, HK3)
+	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONKEYTOGGLE, HK3)
 	iCCConfig:addParam("useItems", "Use Items", SCRIPT_PARAM_ONOFF)
 	iCCConfig:addParam("drawcircles","Draw Circles", SCRIPT_PARAM_ONOFF, true)
 
