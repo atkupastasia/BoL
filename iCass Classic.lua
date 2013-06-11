@@ -41,6 +41,7 @@ function OnLoad()
 	iCCConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false,  HK2)
 	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONKEYTOGGLE, true, HK3)
 	iCCConfig:addParam("useItems", "Use Items", SCRIPT_PARAM_ONOFF, true)
+	iCCConfig:addParam("moveToMouse", "Move To Mouse", SCRIPT_PARAM_ONOFF, false)
 	iCCConfig:addParam("drawcircles","Draw Circles", SCRIPT_PARAM_ONOFF, true)
 
 	iCCConfig:permaShow("pewpew")
@@ -65,6 +66,9 @@ function OnTick()
 		if iCCConfig.pewpew then PewPew() end
 		if iCCConfig.harass then Poke() end
 		if iCCConfig.autoE or iCCConfig.pewpew then autoE() end
+		if (iCCConfig.pewpew or iCCConfig.harass) and iCCConfig.moveToMouse then
+			myHero:MoveTo(mousePos.x, mousePos.z)
+		end
 	end
 end
 
@@ -92,7 +96,7 @@ function Poke()
 	end
 end
 
-function AutoE()
+function autoE()
 	if myHero:CanUseSpell(_E) == READY then
 		if isPoisoned(ts.target) or getDmg("E", ts.target, myHero) > ts.target.health then
 			if iCCConfig.useItems then
