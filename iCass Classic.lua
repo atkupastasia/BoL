@@ -60,7 +60,8 @@ function OnTick()
 	ts:update()
 	updateItems()
 
-	if ValidTarget(ts.target) then
+	if not myHero.dead and ValidTarget(ts.target) then
+		autoIgnite()
 		if iCCConfig.pewpew then PewPew() end
 		if iCCConfig.harass then Poke() end
 		if iCCConfig.autoE or iCCConfig.pewpew then autoE() end
@@ -102,6 +103,16 @@ function AutoE()
 				end
 			end
 			CastSpell(_E, ts.target)
+		end
+	end
+end
+
+function autoIgnite()
+	if igniteSlot and myHero:CanUseSpell(igniteSlot) then
+		for i, enemy in ipairs(GetEnemyHeroes()) do
+			if ValidTarget(enemy, igniteRange) and enemy.health < getDmg("IGNITE", enemy, myHero) then
+				CastSpell(igniteSlot, enemy)
+			end
 		end
 	end
 end
