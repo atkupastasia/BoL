@@ -6,6 +6,7 @@ if myHero.charName ~= "Cassiopeia" then return end
 
 local HK1 = string.byte("A")
 local HK2 = string.byte("C")
+local HK3 = string.byte("T")
 
 --[[ Constants ]]--
 
@@ -39,6 +40,7 @@ function OnLoad()
 	iCCConfig:addParam("pewpew", "PewPew!", SCRIPT_PARAM_ONKEYDOWN, HK1)
 	iCCConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, HK2)
 	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONOFF, HK3)
+	iCCConfig:addParam("useItems", "Use Items", SCRIPT_PARAM_ONOFF)
 	iCCConfig:addParam("drawcircles","Draw Circles", SCRIPT_PARAM_ONOFF, true)
 
 	iCCConfig:permaShow("pewpew")
@@ -52,9 +54,6 @@ function OnLoad()
 
 	PoisionTimers.enemies = GetEnemyHeroes()
 	PoisionTimers.poison = {}
-	for i = 1, #PoisionTimers.enemies do
-		PoisionTimers.poison[i] = 0
-	end
 end
 
 function OnTick()
@@ -94,10 +93,12 @@ end
 
 function AutoE()
 	if myHero:CanUseSpell(_E) == READY then
-		if isPoisoned(ts.target) then
-			for i, item in ipairs(itemsList) do
-				if item.ready then
-					CastSpell(item.slot, ts.target)
+		if isPoisoned(ts.target) or getDmg("E", ts.target, myHero) > ts.target.health then
+			if iCCConfig.useItems then
+				for i, item in ipairs(itemsList) do
+					if item.ready then
+						CastSpell(item.slot, ts.target)
+					end
 				end
 			end
 			CastSpell(_E, ts.target)
