@@ -46,6 +46,7 @@ local HK3 = string.byte("C")
 local HK4 = string.byte("X") -- Derp, not used but still here.
 local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
+local damageSafetyNet = 2 --%
 local minHitChance = 0.3
 local drawPrediction = false
 local OnlyEWhenQNotReadyAndTargetCanMove = false
@@ -57,7 +58,7 @@ local AARange = 550
 local QRange = 1150
 local WRange = 1050
 local ERange = 1100
-local RRange = 3200
+local RRange = 3000
 local igniteRange = 600
 local defaultItemRange = 700
 
@@ -426,6 +427,7 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	--local QPos = GetQPrediction(enemy)
 	--local _,_,tempEPos = tpE:GetPrediction(enemy)
 	--local EPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
+	local safeNet = 1 - damageSafetyNet / 100
 	local returnDamage = {}
 	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((QPos and GetDistance({x = QPos.x, z = QPos.z}) < QRange or GetDistance(enemy) < QRange) and not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
 	--returnDamage.Wbase = (( (myHero:CanUseSpell(_W) == READY or not readyCheck) and (GetDistance(enemy) < WRange or not checkRange) and getDmg("W", enemy, myHero)) or 0 )
@@ -439,16 +441,16 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	returnDamage.ignite = (( igniteSlot and (myHero:CanUseSpell(igniteSlot) == READY or not readyCheck) and (GetDistance(enemy) < igniteRange or not checkRange) and getDmg("IGNITE", enemy, myHero)) or 0)
 	returnDamage.passive = getDmg("P", enemy, myHero)
 
-	returnDamage.onSpell = returnDamage.LIANDRYS + returnDamage.BLACKFIRE
-	returnDamage.Q = returnDamage.Qbase + returnDamage.onSpell
-	--returnDamage.W = returnDamage.Wbase + returnDamage.onSpell
-	returnDamage.E = returnDamage.Ebase + returnDamage.onSpell
-	returnDamage.R = returnDamage.Rbase + returnDamage.onSpell
-	returnDamage.QWE = returnDamage.Q --[[+ returnDamage.W]] + returnDamage.E + returnDamage.passive
+	returnDamage.onSpell = (returnDamage.LIANDRYS + returnDamage.BLACKFIRE) * safeNet
+	returnDamage.Q = (returnDamage.Qbase + returnDamage.onSpell) * safeNet
+	--returnDamage.W = (returnDamage.Wbase + returnDamage.onSpell) * safeNet
+	returnDamage.E = (returnDamage.Ebase + returnDamage.onSpell) * safeNet
+	returnDamage.R = (returnDamage.Rbase + returnDamage.onSpell) * safeNet
+	returnDamage.QWE = returnDamage.Q --[[+ returnDamage.W]] + returnDamage.E + returnDamage.passive * safeNet
 	returnDamage.QWER = returnDamage.QWE + returnDamage.R
-	returnDamage.items = returnDamage.DFG + returnDamage.HXG + returnDamage.BWC
+	returnDamage.items = (returnDamage.DFG + returnDamage.HXG + returnDamage.BWC) * safeNet
 
-	returnDamage.total = (returnDamage.DFG > 0 and 1.2 * returnDamage.QWER or returnDamage.QWER) + returnDamage.items + returnDamage.ignite
+	returnDamage.total = (returnDamage.DFG > 0 and 1.2 * returnDamage.QWER or returnDamage.QWER) + returnDamage.items + returnDamage.ignite * safeNet
 
 	return returnDamage
 end
