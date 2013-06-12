@@ -132,7 +132,7 @@ function OnLoad()
 	iLuxConfig:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("damageText", "Kill Text", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("moveToMouse", "Move To Mouse During PewPew", SCRIPT_PARAM_ONOFF, false)
-	iLuxConfig:addParam("moveToMouseFarm", "Move to Mouse while Munching?")
+	iLuxConfig:addParam("moveToMouseFarm", "Move to Mouse while Munching?", SCRIPT_PARAM_ONOFF, false)
 	iLuxConfig:addParam("StealTzeBuffs", "Steal Buffs?", SCRIPT_PARAM_ONOFF, false)
 
 	iLuxConfig:permaShow("pewpew")
