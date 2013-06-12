@@ -98,7 +98,7 @@ end
 
 function autoE()
 	if myHero:CanUseSpell(_E) == READY then
-		if isPoisoned(ts.target) or getDmg("E", ts.target, myHero) > ts.target.health then
+		if GetDistance(ts.target) < ERange and (isPoisoned(ts.target) or getDmg("E", ts.target, myHero) > ts.target.health) then
 			if iCCConfig.useItems then
 				for i, item in ipairs(itemsList) do
 					if item.ready then
