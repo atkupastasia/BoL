@@ -132,6 +132,7 @@ function OnLoad()
 	iLuxConfig:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("damageText", "Kill Text", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("moveToMouse", "Move To Mouse During PewPew", SCRIPT_PARAM_ONOFF, false)
+	iLuxConfig:addParam("moveToMouseFarm", "Move to Mouse while Munching?")
 	iLuxConfig:addParam("StealTzeBuffs", "Steal Buffs?", SCRIPT_PARAM_ONOFF, false)
 
 	iLuxConfig:permaShow("pewpew")
@@ -162,11 +163,9 @@ function OnTick()
 	if not myHero.dead then
 		AutoIgnite()
 		AutoUlt()
-		if iLuxConfig.pewpew then
-			PewPew()
-			if iLuxConfig.moveToMouse then
-				myHero:MoveTo(mousePos.x, mousePos.z)
-			end
+		if iLuxConfig.pewpew then PewPew()end
+		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) or (iLuxConfig.moveToMouseFarm and iLuxConfig.autoFarm) then
+			myHero:MoveTo(mousePos.x, mousePos.z)
 		end
 		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or (iLuxConfig.AutoTriggerE and not iLuxConfig.pewpew)) then
 			AutoTriggerE()
