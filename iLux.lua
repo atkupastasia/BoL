@@ -164,7 +164,7 @@ function OnTick()
 		AutoIgnite()
 		AutoUlt()
 		if iLuxConfig.pewpew then PewPew()end
-		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) or (iLuxConfig.moveToMouseFarm and iLuxConfig.autoFarm) then
+		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) then
 			myHero:MoveTo(mousePos.x, mousePos.z)
 		end
 		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or (iLuxConfig.AutoTriggerE and not iLuxConfig.pewpew)) then
@@ -320,6 +320,9 @@ function autoFarm()
 			myHero:Attack(minion)
 			return
 		end
+	end
+	if iLuxConfig.moveToMouseFarm then
+		myHero:MoveTo(mousePos.x, mousePos.z)
 	end
 end
 
