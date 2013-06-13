@@ -10,8 +10,8 @@ local HK3 = string.byte("T")
 
 --[[ Constants ]]--
 
-local QDelay = 600
-local WDelay = 300
+local QDelay = 0.600
+local WDelay = 0.300
 local QRange = 850
 local ERange = 700
 
