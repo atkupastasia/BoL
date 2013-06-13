@@ -66,22 +66,22 @@ function OnTick()
 		if iCCConfig.pewpew then PewPew() end
 		if iCCConfig.harass then Poke() end
 		if iCCConfig.autoE or iCCConfig.pewpew then autoE() end
-		if (iCCConfig.pewpew or iCCConfig.harass) and iCCConfig.moveToMouse then
-			myHero:MoveTo(mousePos.x, mousePos.z)
-		end
+	end
+	if (iCCConfig.pewpew or iCCConfig.harass) and iCCConfig.moveToMouse then
+		myHero:MoveTo(mousePos.x, mousePos.z)
 	end
 end
 
 function PewPew()
 	if myHero:CanUseSpell(_Q) == READY then
 		local _,_,QPos = tpQ:GetPrediction(ts.target)
-		if QPos then
+		if QPos and tpQ:GetHitChance(ts.target) > 0.3 then
 			CastSpell(_Q, QPos.x, QPos.z)
 		end
 	end
 	if myHero:CanUseSpell(_W) == READY then
 		local _,_,WPos = tpW:GetPrediction(ts.target)
-		if WPos then
+		if WPos and tpQ:GetHitChance(ts.target) > 0.3 then
 			CastSpell(_W, WPos.x, WPos.z)
 		end
 	end
@@ -90,7 +90,7 @@ end
 function Poke()
 	if myHero:CanUseSpell(_Q) == READY then
 		local _,_,QPos = tpQ:GetPrediction(ts.target)
-		if QPos then
+		if QPos and tpQ:GetHitChance(ts.target) > 0.3 then
 			CastSpell(_Q, QPos.x, QPos.z)
 		end
 	end
