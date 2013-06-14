@@ -76,6 +76,7 @@ local tpQ = TargetPredictionVIP(QRange, QSpeed, 0.250, QWidth)
 local tpQCollision = Collision(QRange, QSpeed, 0.250, QWidth)
 local tpE = TargetPredictionVIP(ERange, ESpeed, 0.150, ERadius)
 local tpR = TargetPredictionVIP(RRange, RSpeed, 0.700, RWidth)
+local tpRHealth = TargetPrediction(RRange, RSpeed, 700, RWidth)
 
 local igniteSlot = nil
 local EParticle = nil
@@ -375,8 +376,9 @@ function StealTzeBuffs()
 		for _, jungleMob in pairs(jungleObjects) do
 			if jungleMob and jungleMob.isCamp then
 				local tempMob = jungleMob.object
+				local _,_,nextHealth = tpRHealth:GetPrediction(tempMob)
 				if tempMob ~= nil and tempMob.valid and tempMob.visible and not tempMob.dead and GetDistance(tempMob) < RRange then
-					if getDmg("R", tempMob, myHero) > tempMob.health then
+					if getDmg("R", tempMob, myHero) * 0.9 >  nextHealth then
 						CastSpell(_R, tempMob.x, tempMob.z)
 					end
 				end
