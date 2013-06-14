@@ -376,8 +376,8 @@ function StealTzeBuffs()
 		for _, jungleMob in pairs(jungleObjects) do
 			if jungleMob and jungleMob.isCamp then
 				local tempMob = jungleMob.object
-				local _,_,nextHealth = tpRHealth:GetPrediction(tempMob)
 				if tempMob ~= nil and tempMob.valid and tempMob.visible and not tempMob.dead and GetDistance(tempMob) < RRange then
+					local _,_,nextHealth = tpRHealth:GetPrediction(tempMob)
 					if getDmg("R", tempMob, myHero) * 0.9 >  nextHealth then
 						CastSpell(_R, tempMob.x, tempMob.z)
 					end
