@@ -130,7 +130,9 @@ end
 
 function isPoisoned(enemy)
 	for i, poison in ipairs(PoisionTimers.poison) do
-		if GetDistance(enemy, poison) < 80 then
+		if not poison.valid then
+			table.remove(PoisionTimers.poison, i)
+		elseif GetDistance(enemy, poison) < 80 then
 			return true
 		end
 	end
