@@ -51,6 +51,7 @@ local minHitChance = 0.3
 local drawPrediction = false
 local OnlyEWhenQNotReadyAndTargetCanMove = false
 local minMinionsForEFarm = 2
+local useNewCombo = true
 
 --[[ Constants ]]--
 
@@ -115,6 +116,8 @@ local jungleObjects = {
 	["AncientGolem7.1.1"] = {object = nil, isCamp = true},
 }
 
+--[[ Core Callbacks ]]--
+
 function OnLoad()
 	iLuxConfig = scriptConfig("iLux - Penta Rainbows", "iLux")
 
@@ -164,7 +167,7 @@ function OnTick()
 	if not myHero.dead then
 		AutoIgnite()
 		AutoUlt()
-		if iLuxConfig.pewpew then PewPew()end
+		if iLuxConfig.pewpew then if useNewCombo then newPewPew() else PewPew() end end
 		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) then
 			myHero:MoveTo(mousePos.x, mousePos.z)
 		end
@@ -178,11 +181,159 @@ function OnTick()
 	end
 end
 
+function OnCreateObj(object)
+	if object.name:find("LuxLightstrike_tar") then
+		EParticle = object
+	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
+		jungleObjects[object.name].object = object
+	end
+end
+
+function OnDeleteObj(object)
+	if object.name:find("LuxLightstrike_tar") or (EParticle and EParticle.rawHash == object.rawHash) then
+		EParticle = nil
+		TriggerEOnLand = false
+		TriggerEOnLandFarm = false
+	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
+		jungleObjects[object.name].object = nil
+	end
+end
+
+function OnDraw()
+	if not myHero.dead and iLuxConfig.drawcircles then
+		if myHero:CanUseSpell(_Q) == READY or myHero:CanUseSpell(_E) == READY then
+			DrawCircle(myHero.x, myHero.y, myHero.z, QRange, 0xFF80FF00)
+		end
+
+		if myHero:CanUseSpell(_R) == READY then
+			DrawCircle(myHero.x, myHero.y, myHero.z, RRange, 0xFF80FF00)
+		end
+
+		if drawPrediction then
+			if myHero:CanUseSpell(_Q) == READY and ValidTarget(ts.target) and GetQPrediction(ts.target) ~= nil then
+				tpQCollision:DrawCollision(myHero, GetQPrediction(ts.target))
+			end
+	
+			if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
+				local _,_,tempEPos = tpE:GetPrediction(ts.target)
+				local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
+				if EPos then
+					DrawCircle(EPos.x, EPos.y, EPos.z, 275, 0xFFFF0000)
+				end
+			end
+		end
+
+		if ValidTarget(ts.target) then
+			for i = 1, 10 do
+				DrawCircle(ts.target.x, ts.target.y, ts.target.z, 90+i, 0xFFFF0000)
+			end
+		end
+
+		for i, minion in ipairs(enemyMinions.objects) do
+			if minion and ValidTarget(minion, QRange) then
+				if minion.health < (getDmg("AD", minion, myHero) + (TargetHaveBuff("luxilluminatingfraulein", minion) and getDmg("P", minion, myHero) or 0)) then
+					for j = 1, 10 do
+						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFF80FF00)
+					end
+				elseif minion.health < getDmg("E", minion, myHero) then
+					for j = 1, 10 do
+						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFFFF0000)
+					end
+				end
+			end
+		end
+	end
+end
+
+--[[ Combat Functions ]]--
+
+function newPewPew()
+	if not ValidTarget(ts.target) then return end
+	local QPos = myHero:CanUseSpell(_Q) == READY and GetQPrediction(ts.target)
+	local EPos = myHero:CanUseSpell(_E) == READY and GetEPrediction(ts.target) or EParticle
+	local RPos = myHero:CanUseSpell(_R) == READY and GetRPrediction(ts.target)
+	if ts.target.canMove and myHero:CanUseSpell(_Q) == READY and QPos then
+		CastSpell(_Q, QPos.x, QPos.z)
+	elseif not ts.target.canMove then
+		local calcDmg = calculateDamage(ts.target, true, true, (QPos or 1), (EPos or 1))
+		local passiveOn = TargetHaveBuff("luxilluminatingfraulein", ts.target)
+		if calcDmg.E + (passiveOn and calcDmg.passive or 0) > ts.target.health then
+			if myHero:CanUseSpell(_E) == READY and not EParticle and EPos then
+				CastSpell(_E, EPos and EPos.x or ts.target.x, EPos and EPos.z or ts.target.z)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+		elseif calcDmg.Q + (passiveOn and calcDmg.passive or 0) > ts.target.health then
+			if myHero:CanUseSpell(_Q) == READY then CastSpell(_Q, QPos and QPos.x or ts.target.x, QPos and QPos.z or ts.target.z) end
+		elseif QPos and EPos and getDmg.Q + calcDmg.E + (passiveOn and calcDmg.passive * 2 or calcDmg.passive) > ts.target.health then
+			if myHero:CanUseSpell(_Q) == READY then CastSpell(_Q, QPos and QPos.x or ts.target.x, QPos and QPos.z or ts.target.z) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle and EPos then
+				CastSpell(_E, EPos and EPos.x or ts.target.x, EPos and EPos.z or ts.target.z)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+		elseif (calcDmg.DFG > 0 and 1.2 * ((QPos and calcDmg.Q or 0) + (EPos and calcDmg.E or 0)) or (QPos and calcDmg.Q or 0) + (EPos and calcDmg.E or 0)) + calcDmg.items + calcDmg.ignite > ts.target.health then
+			for item, itemInfo in pairs(items.itemsList) do
+				if itemInfo.ready and itemInfo.useOnKill then
+					CastSpell(itemInfo.slot, ts.target)
+				end
+			end
+			if myHero:CanUseSpell(_Q) == READY then CastSpell(_Q, QPos and QPos.x or ts.target.x, QPos and QPos.z or ts.target.z) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle and EPos then
+				CastSpell(_E, EPos and EPos.x or ts.target.x, EPos and EPos.z or ts.target.z)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+			if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then CastSpell(igniteSlot, ts.target) end
+		elseif iLuxConfig.UseUlt and myHero:CanUseSpell(_R) == READY and RPos and calcDmg.total > ts.target.health then
+			for item, itemInfo in pairs(items.itemsList) do
+				if itemInfo.ready and itemInfo.useOnKill then
+					CastSpell(itemInfo.slot, ts.target)
+				end
+			end
+			if myHero:CanUseSpell(_Q) == READY then CastSpell(_Q, QPos and QPos.x or ts.target.x, QPos and QPos.z or ts.target.z) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle and EPos then
+				CastSpell(_E, EPos and EPos.x or ts.target.x, EPos and EPos.z or ts.target.z)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+			if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then CastSpell(igniteSlot, ts.target) end
+			CastSpell(_R, RPos and RPos.x or ts.target.x, RPos and RPos.z or ts.target.z)
+		else
+			if QPos then CastSpell(_Q, QPos.x, QPos.z) end
+			if EPos then
+				if not EParticle then
+					CastSpell(_E, EPos and EPos.x or ts.target.x, EPos and EPos.z or ts.target.z)
+					TriggerEOnLand = true
+					TriggerEOnLandFarm = false
+				elseif GetDistance(EParticle, ts.target) < ERadius then
+					CastSpell(_E)
+				end
+			end
+		end
+	elseif myHero:CanUseSpell(_E) == READY and EPos and (not OnlyEWhenQNotReadyAndTargetCanMove or myHero:CanUseSpell(_Q) ~= READY) then
+		if not EParticle then
+			CastSpell(_E, EPos.x, EPos.z)
+			TriggerEOnLand = true
+			TriggerEOnLandFarm = false
+		elseif GetDistance(EParticle, ts.target) < ERadius then
+			CastSpell(_E)
+		end
+	end
+end
+
 function PewPew()
 	if ValidTarget(ts.target) then
 		local QPos = GetQPrediction(ts.target)
-		local _,_,tempEPos = tpE:GetPrediction(ts.target)
-		local EPos = (minHitChance == 0 or tpE:GetHitChance(ts.target) > minHitChance) and tempEPos or nil
+		local EPos = GetEPrediction(ts.target)
 		if ts.target.canMove and myHero:CanUseSpell(_Q) == READY and QPos then
 			CastSpell(_Q, QPos.x, QPos.z)
 			QStatus = 1
@@ -336,8 +487,7 @@ function AutoUlt()
 					pingTimer[enemy.charName] = GetTickCount()
 				end
 				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt then
-					local _,_,tempRPos = tpR:GetPrediction(enemy)
-					local RPos = (minHitChance == 0 or tpR:GetHitChance(enemy) > minHitChance) and tempRPos or nil
+					local RPos = GetRPrediction(enemy)
 					if RPos then
 						CastSpell(_R, RPos.x, RPos.z)
 						return
@@ -387,6 +537,19 @@ function StealTzeBuffs()
 	end
 end
 
+function AutoIgnite()
+	if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then
+		for i, enemy in ipairs(GetEnemyHeroes()) do
+			local igniteDmg = getDmg("IGNITE", enemy, myHero)
+			if ValidTarget(enemy, igniteRange) and enemy.health < igniteDmg then
+				CastSpell(igniteSlot, enemy)
+			end
+		end
+	end
+end
+
+--[[ Prediction and Calculations ]]--
+
 function GetQPrediction(enemy)
 	if minHitChance ~= 0 and tpQ:GetHitChance(enemy) < minHitChance then return nil end
 	local _,_,QPos = tpQ:GetPrediction(enemy)
@@ -398,36 +561,16 @@ function GetQPrediction(enemy)
 	end
 end
 
-function OnCreateObj(object)
-	if object.name:find("LuxLightstrike_tar") then
-		EParticle = object
-	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
-		jungleObjects[object.name].object = object
-	end
+function GetEPrediction(enemy)
+	if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
+	local _,_,EPos = tpE:GetPrediction(enemy)
+	return EPos
 end
 
-function OnDeleteObj(object)
-	if object.name:find("LuxLightstrike_tar") or (EParticle and EParticle.rawHash == object.rawHash) then
-		EParticle = nil
-		TriggerEOnLand = false
-		TriggerEOnLandFarm = false
-	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
-		jungleObjects[object.name].object = nil
-	end
-end
-
-function updateItems()
-	for item, itemInfo in pairs(items.itemsList) do
-		itemInfo.slot = GetInventorySlotItem(itemInfo.id)		
-		itemInfo.ready = (itemInfo.slot and myHero:CanUseSpell(itemInfo.slot) == READY or false)
-	end
-	for item, itemInfo in pairs(items.passiveItemsList) do
-		itemInfo.slot = GetInventorySlotItem(itemInfo.id)
-	end
-	items["ZHONYAS"].slot = GetInventorySlotItem(items["ZHONYAS"].id)		
-	items["ZHONYAS"].ready = (items["ZHONYAS"].slot and myHero:CanUseSpell(items["ZHONYAS"].slot) == READY or false)
-	items["WOOGLETS"].slot = GetInventorySlotItem(items["WOOGLETS"].id)		
-	items["WOOGLETS"].ready = (items["WOOGLETS"].slot and myHero:CanUseSpell(items["WOOGLETS"].slot) == READY or false)
+function GetRPrediction(enemy)
+	if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
+	local _,_,RPos = tpR:GetPrediction(enemy)
+	return RPos
 end
 
 function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
@@ -436,9 +579,9 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	--local EPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
 	local safeNet = 1 - damageSafetyNet / 100
 	local returnDamage = {}
-	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((QPos and GetDistance({x = QPos.x, z = QPos.z}) < QRange or GetDistance(enemy) < QRange) and not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
+	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((QPos and QPos ~= 1 and GetDistance({x = QPos.x, z = QPos.z}) < QRange or (QPos ~= 1 and GetDistance(enemy)) < QRange) and not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
 	--returnDamage.Wbase = (( (myHero:CanUseSpell(_W) == READY or not readyCheck) and (GetDistance(enemy) < WRange or not checkRange) and getDmg("W", enemy, myHero)) or 0 )
-	returnDamage.Ebase = (( (myHero:CanUseSpell(_E) == READY or not readyCheck) and ((EPos and GetDistance({x = EPos.x, z = EPos.z}) < ERange or GetDistance(enemy) < ERange) and not checkRange) and getDmg("E", enemy, myHero)) or 0 )
+	returnDamage.Ebase = (( (myHero:CanUseSpell(_E) == READY or not readyCheck) and ((EPos and EPos ~= 1 and (EPos ~= EParticle and GetDistance({x = EPos.x, z = EPos.z}) < ERange or GetDistance(EParticle, enemy) < ERadius) or (EPos ~= 1 and GetDistance(enemy)) < ERange) and not checkRange) and getDmg("E", enemy, myHero)) or 0 )
 	returnDamage.Rbase = (( (myHero:CanUseSpell(_R) == READY or not readyCheck) and (GetDistance(enemy) < RRange or not checkRange) and getDmg("R", enemy, myHero)) or 0 )
 	returnDamage.DFG = (( (items.itemsList["DFG"].ready or (items.itemsList["DFG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("DFG", enemy, myHero)) or 0 )
 	returnDamage.HXG = (( (items.itemsList["HXG"].ready or (items.itemsList["HXG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("HXG", enemy, myHero)) or 0 )
@@ -457,9 +600,23 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	returnDamage.QWER = returnDamage.QWE + returnDamage.R
 	returnDamage.items = (returnDamage.DFG + returnDamage.HXG + returnDamage.BWC) * safeNet
 
-	returnDamage.total = (returnDamage.DFG > 0 and 1.2 * returnDamage.QWER or returnDamage.QWER) + returnDamage.items + returnDamage.ignite * safeNet
+	returnDamage.total = ((returnDamage.DFG > 0 and 1.2 * returnDamage.QWER or returnDamage.QWER) + returnDamage.items + returnDamage.ignite) * safeNet
 
 	return returnDamage
+end
+
+function updateItems()
+	for item, itemInfo in pairs(items.itemsList) do
+		itemInfo.slot = GetInventorySlotItem(itemInfo.id)		
+		itemInfo.ready = (itemInfo.slot and myHero:CanUseSpell(itemInfo.slot) == READY or false)
+	end
+	for item, itemInfo in pairs(items.passiveItemsList) do
+		itemInfo.slot = GetInventorySlotItem(itemInfo.id)
+	end
+	items["ZHONYAS"].slot = GetInventorySlotItem(items["ZHONYAS"].id)		
+	items["ZHONYAS"].ready = (items["ZHONYAS"].slot and myHero:CanUseSpell(items["ZHONYAS"].slot) == READY or false)
+	items["WOOGLETS"].slot = GetInventorySlotItem(items["WOOGLETS"].id)		
+	items["WOOGLETS"].ready = (items["WOOGLETS"].slot and myHero:CanUseSpell(items["WOOGLETS"].slot) == READY or false)
 end
 
 function damageText()
@@ -480,62 +637,7 @@ function damageText()
 	end
 end
 
-function OnDraw()
-	if not myHero.dead and iLuxConfig.drawcircles then
-		if myHero:CanUseSpell(_Q) == READY or myHero:CanUseSpell(_E) == READY then
-			DrawCircle(myHero.x, myHero.y, myHero.z, QRange, 0xFF80FF00)
-		end
-
-		if myHero:CanUseSpell(_R) == READY then
-			DrawCircle(myHero.x, myHero.y, myHero.z, RRange, 0xFF80FF00)
-		end
-
-		if drawPrediction then
-			if myHero:CanUseSpell(_Q) == READY and ValidTarget(ts.target) and GetQPrediction(ts.target) ~= nil then
-				tpQCollision:DrawCollision(myHero, GetQPrediction(ts.target))
-			end
-	
-			if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
-				local _,_,tempEPos = tpE:GetPrediction(ts.target)
-				local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
-				if EPos then
-					DrawCircle(EPos.x, EPos.y, EPos.z, 275, 0xFFFF0000)
-				end
-			end
-		end
-
-		if ValidTarget(ts.target) then
-			for i = 1, 10 do
-				DrawCircle(ts.target.x, ts.target.y, ts.target.z, 90+i, 0xFFFF0000)
-			end
-		end
-
-		for i, minion in ipairs(enemyMinions.objects) do
-			if minion and ValidTarget(minion, QRange) then
-				if minion.health < getDmg("AD", minion, myHero) then
-					for j = 1, 10 do
-						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFF80FF00)
-					end
-				elseif minion.health < getDmg("E", minion, myHero) then
-					for j = 1, 10 do
-						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFFFF0000)
-					end
-				end
-			end
-		end
-	end
-end
-
-function AutoIgnite()
-	if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then
-		for i, enemy in ipairs(GetEnemyHeroes()) do
-			local igniteDmg = getDmg("IGNITE", enemy, myHero)
-			if ValidTarget(enemy, igniteRange) and enemy.health < igniteDmg then
-				CastSpell(igniteSlot, enemy)
-			end
-		end
-	end
-end
+--[[ Garbage Bin ]]--
 
 function OnProcessSpell(object, spell)
 
