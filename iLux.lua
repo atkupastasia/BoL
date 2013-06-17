@@ -388,11 +388,14 @@ function StealTzeBuffs()
 end
 
 function GetQPrediction(enemy)
-	local _,_,tempQPos = tpQ:GetPrediction(enemy)
-	local QPos = (minHitChance == 0 or tpQ:GetHitChance(ts.target) > minHitChance) and tempQPos or nil
-	if QPos == nil then return nil end
+	if minHitChance ~= 0 and tpQ:GetHitChance(enemy) < minHitChance then return nil end
+	local _,_,QPos = tpQ:GetPrediction(enemy)
 	local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
-	return (willCollide and (iLuxConfig.QWithSingleCollide and #collideArray > 1 or not iLuxConfig.QWithSingleCollide) and nil) or QPos
+	if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
+		return QPos
+	else
+		return nil
+	end
 end
 
 function OnCreateObj(object)
@@ -673,5 +676,8 @@ v1.2
     #@&:%0                                  0%:&@#    
   #@&:%0                                     0%:&@#   
   "" ' "                                       " ' "" 
+
+  Notes:
+  - Block missing ultimates
 
   ]]
