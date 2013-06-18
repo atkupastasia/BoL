@@ -150,7 +150,7 @@ function OnLoad()
 	enemyMinions = minionManager(MINION_ENEMY, ERange, myHero, MINION_SORT_HEALTH_ASC)
 
 
-	for i = 0, objManager.maxObjects do
+	for i = 1, objManager.maxObjects do
 		local object = objManager:getObject(i)
 		if object and object.valid and jungleObjects[object.name] and jungleObjects[object.name].isCamp then
 			jungleObjects[object.name].object = object
@@ -267,7 +267,7 @@ function newPewPew()
 			end
 		elseif calcDmg.Q + (passiveOn and calcDmg.passive or 0) > ts.target.health then
 			if myHero:CanUseSpell(_Q) == READY then CastSpell(_Q, QPos and QPos.x or ts.target.x, QPos and QPos.z or ts.target.z) end
-		elseif QPos and EPos and getDmg.Q + calcDmg.E + (passiveOn and calcDmg.passive * 2 or calcDmg.passive) > ts.target.health then
+		elseif QPos and EPos and calcDmg.Q + calcDmg.E + (passiveOn and calcDmg.passive * 2 or calcDmg.passive) > ts.target.health then
 			if myHero:CanUseSpell(_Q) == READY then CastSpell(_Q, QPos and QPos.x or ts.target.x, QPos and QPos.z or ts.target.z) end
 			if myHero:CanUseSpell(_E) == READY and not EParticle and EPos then
 				CastSpell(_E, EPos and EPos.x or ts.target.x, EPos and EPos.z or ts.target.z)
@@ -579,9 +579,9 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	--local EPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
 	local safeNet = 1 - damageSafetyNet / 100
 	local returnDamage = {}
-	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((QPos and QPos ~= 1 and GetDistance({x = QPos.x, z = QPos.z}) < QRange or (QPos ~= 1 and GetDistance(enemy)) < QRange) and not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
+	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((QPos and QPos ~= 1 and GetDistance({x = QPos.x, z = QPos.z}) < QRange or (QPos ~= 1 and GetDistance(enemy) < QRange)) and not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
 	--returnDamage.Wbase = (( (myHero:CanUseSpell(_W) == READY or not readyCheck) and (GetDistance(enemy) < WRange or not checkRange) and getDmg("W", enemy, myHero)) or 0 )
-	returnDamage.Ebase = (( (myHero:CanUseSpell(_E) == READY or not readyCheck) and ((EPos and EPos ~= 1 and (EPos ~= EParticle and GetDistance({x = EPos.x, z = EPos.z}) < ERange or GetDistance(EParticle, enemy) < ERadius) or (EPos ~= 1 and GetDistance(enemy)) < ERange) and not checkRange) and getDmg("E", enemy, myHero)) or 0 )
+	returnDamage.Ebase = (( (myHero:CanUseSpell(_E) == READY or not readyCheck) and ((EPos and EPos ~= 1 and (EPos ~= EParticle and GetDistance({x = EPos.x, z = EPos.z}) < ERange or GetDistance(EParticle, enemy) < ERadius) or (EPos ~= 1 and GetDistance(enemy) < ERange)) and not checkRange) and getDmg("E", enemy, myHero)) or 0 )
 	returnDamage.Rbase = (( (myHero:CanUseSpell(_R) == READY or not readyCheck) and (GetDistance(enemy) < RRange or not checkRange) and getDmg("R", enemy, myHero)) or 0 )
 	returnDamage.DFG = (( (items.itemsList["DFG"].ready or (items.itemsList["DFG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("DFG", enemy, myHero)) or 0 )
 	returnDamage.HXG = (( (items.itemsList["HXG"].ready or (items.itemsList["HXG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("HXG", enemy, myHero)) or 0 )
