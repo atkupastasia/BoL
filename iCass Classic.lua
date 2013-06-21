@@ -10,7 +10,7 @@ local HK3 = string.byte("T")
 
 --[[ Constants ]]--
 
-local QDelay = 0.600
+local QDelay = 0.500
 local WDelay = 0.300
 local QRange = 850
 local ERange = 700
@@ -18,8 +18,8 @@ local ERange = 700
 --[[ Script Variables ]]--
 
 local ts = TargetSelector(TARGET_LOW_HP, QRange, DAMAGE_MAGIC, false)
-local tpQ = TargetPredictionVIP(QRange, math.huge, QDelay, 60)
-local tpW = TargetPredictionVIP(WRange, math.huge, WDelay, 150)
+local tpQ = TargetPredictionVIP(QRange, math.huge, QDelay, 130)
+local tpW = TargetPredictionVIP(WRange, math.huge, WDelay, 300)
 local PoisionTimers = {}
 
 local itemsList = {
@@ -40,6 +40,7 @@ function OnLoad()
 	iCCConfig:addParam("pewpew", "PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
 	iCCConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false,  HK2)
 	iCCConfig:addParam("autoE", "Auto E", SCRIPT_PARAM_ONKEYTOGGLE, true, HK3)
+	iCCConfig:addParam("increasedQRange", "Increased Q Range", SCRIPT_PARAM_ONOFF, true)
 	iCCConfig:addParam("useItems", "Use Items", SCRIPT_PARAM_ONOFF, true)
 	iCCConfig:addParam("moveToMouse", "Move To Mouse", SCRIPT_PARAM_ONOFF, false)
 	iCCConfig:addParam("drawcircles","Draw Circles", SCRIPT_PARAM_ONOFF, true)
@@ -58,6 +59,7 @@ function OnLoad()
 end
 
 function OnTick()
+	QRange = QRange + (iCCConfig.increasedQRange and 75 or 0)
 	ts:update()
 	updateItems()
 
@@ -76,7 +78,12 @@ function PewPew()
 	if myHero:CanUseSpell(_Q) == READY then
 		local _,_,QPos = tpQ:GetPrediction(ts.target)
 		if QPos and tpQ:GetHitChance(ts.target) > 0.3 then
-			CastSpell(_Q, QPos.x, QPos.z)
+			if GetDistance(QPos) <= 850 or not iCCConfig.increasedQRange then
+				CastSpell(_Q, QPos.x, QPos.z)
+			elseif GetDistance(QPos) <= 925 then
+				local castPos = Vector(QPos) + (Vector(QPos) - Vector(myHero)):normalized() * 850
+				CastSpell(_Q, castPos.x, castPos.z)
+			end
 		end
 	end
 	if myHero:CanUseSpell(_W) == READY then
@@ -91,7 +98,12 @@ function Poke()
 	if myHero:CanUseSpell(_Q) == READY then
 		local _,_,QPos = tpQ:GetPrediction(ts.target)
 		if QPos and tpQ:GetHitChance(ts.target) > 0.3 then
-			CastSpell(_Q, QPos.x, QPos.z)
+			if GetDistance(QPos) <= 850 or not iCCConfig.increasedQRange then
+				CastSpell(_Q, QPos.x, QPos.z)
+			elseif GetDistance(QPos) <= 925 then
+				local castPos = Vector(QPos) + (Vector(QPos) - Vector(myHero)):normalized() * 850
+				CastSpell(_Q, castPos.x, castPos.z)
+			end
 		end
 	end
 end
