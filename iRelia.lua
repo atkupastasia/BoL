@@ -87,6 +87,10 @@ function OnDraw()
 		if myHero:CanUseSpell(_E) == READY then DrawCircle(myHero.x, myHero.y, myHero.z, ERange, 0x8080FF00) end
 		if myHero:CanUseSpell(_R) == READY then DrawCircle(myHero.x, myHero.y, myHero.z, RRange, 0x8080FF00) end
 
+		if ValidTarget(ts.target) then
+			DrawCircle(ts.target.x, ts.target.y, ts.target.z, 100, 0xFFFF0000)
+		end
+
 		damageText()
 	end
 end
@@ -202,7 +206,7 @@ end
 
 function damageText()
 	local damageTextList = {"Poor Enemy", "Ultimate!", "Nuke!", "Risky", "Derp..."}
-	for i, enemy in ipairs(GetEnemyHeroes()) do
+	for _, enemy in ipairs(GetEnemyHeroes()) do
 		if ValidTarget(enemy) then
 			if updateTextTimers[enemy.charName] == nil then
 				updateTextTimers[enemy.charName] = 30
@@ -213,6 +217,11 @@ function damageText()
 				local killMode = (calcDmg.QWE > enemy.health and 1) or (calcDmg.R > enemy.health and 2) or (calcDmg.QWER > enemy.health and 3) or (calcDmg.total > enemy.health and 4) or 5
 				if killMode > 0 then PrintFloatText(enemy, 0, damageTextList[killMode]) end
 				updateTextTimers[enemy.charName] = 30
+			end
+			if myHero:CanUseSpell(_E) == READY and enemy.health > myHero.health then
+				for i = 0, 5 do
+					DrawCircle(enemy.x, enemy.y, enemy.z, 50+i, 0x8080FF00)
+				end
 			end
 		end
 	end
