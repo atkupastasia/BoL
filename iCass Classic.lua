@@ -59,7 +59,7 @@ function OnLoad()
 end
 
 function OnTick()
-	QRange = QRange + (iCCConfig.increasedQRange and 75 or 0)
+	QRange = 850 + (iCCConfig.increasedQRange and 75 or 0)
 	ts:update()
 	updateItems()
 
