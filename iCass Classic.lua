@@ -142,9 +142,9 @@ end
 
 function isPoisoned(enemy)
 	for i, poison in ipairs(PoisionTimers.poison) do
-		if not poison.valid then
+		if not poison.object.valid then
 			table.remove(PoisionTimers.poison, i)
-		elseif GetDistance(enemy, poison) < 80 then
+		elseif GetDistance(enemy, poison.object) < 80 and GetTickCount() - poison.tick < 2700 then
 			return true
 		end
 	end
@@ -152,17 +152,17 @@ function isPoisoned(enemy)
 end
 
 function OnCreateObj(object)
-	if object.name:find("Global_Poison") then
+	if string.lower(object.name):find("global_goison") then
 		for i, enemy in ipairs(PoisionTimers.enemies) do
 			if GetDistance(object, enemy) < 80 then
-				table.insert(PoisionTimers.poison, object)
+				table.insert(PoisionTimers.poison, {object = object, tick = GetTickCount())
 			end
 		end
 	end
 end
 
 function OnDeleteObj(object)
-	if object.name:find("Global_Poison") then
+	if string.lower(object.name):find("global_goison") then
 		for i, poison in ipairs(PoisionTimers.poison) do
 			if object.rawHash == poison.rawHash then
 				table.remove(PoisionTimers.poison, i)
