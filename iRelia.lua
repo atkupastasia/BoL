@@ -9,6 +9,7 @@ local HK2 = string.byte("T")
 local HK3 = string.byte("C")
 
 local minHitChance = 0.3
+local onlyQOutOfAARange = true
 
 --[[ Constants ]]--
 
@@ -127,7 +128,7 @@ function PewPew()
 		CastSpell(igniteSlot, ts.target)
 		CastSpell(_R, RPos.x, RPos.z)
 	else
-		if myHero:CanUseSpell(_Q) == READY and GetDistance(ts.target) > AARange then CastSpell(_Q, ts.target) end
+		if myHero:CanUseSpell(_Q) == READY and (not onlyQOutOfAARange or GetDistance(ts.target) > AARange) then CastSpell(_Q, ts.target) end
 		if myHero:CanUseSpell(_E) == READY and (ts.target.canMove or myHero.health > ts.target.health) then CastSpell(_E, ts.target) end
 	end
 	if GetDistance(ts.target) < AARange + 50 then CastSpell(_W) end
