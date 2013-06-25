@@ -155,7 +155,7 @@ function OnCreateObj(object)
 	if string.lower(object.name):find("global_goison") then
 		for i, enemy in ipairs(PoisionTimers.enemies) do
 			if GetDistance(object, enemy) < 80 then
-				table.insert(PoisionTimers.poison, {object = object, tick = GetTickCount())
+				table.insert(PoisionTimers.poison, {object = object, tick = GetTickCount()})
 			end
 		end
 	end
