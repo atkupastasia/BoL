@@ -110,19 +110,26 @@ function OnProcessSpell(unit, spell)
 			if ValidTarget(ts.target) then
 				local EPos,_,_ = tpE:GetPrediction(ts.target)
 				if EPos then
-					local intersection = LineSegment(Point(myHero.x, myHero.z), Point(spell.endPos.x, spell.endPos.z)):intersectionPoints(LineSegment(Point(ts.target.x, ts.target.z), Point(EPos.x, EPos.z)))
-					if intersection then
-						for _, intersectionPoint in ipairs(intersection) do
-							if GetDistance(intersectionPoint) < QRange and intersectionPoint.z then
-								if myHero:CanUseSpell(_Q) == READY then
-									CastSpell(_Q, intersectionPoint.x, intersectionPoint.z)
-								end
-								if myHero:CanUseSpell(_W) == READY then
-									CastSpell(_W, intersectionPoint.x, intersectionPoint.z)
-									CastSpell(_W, intersectionPoint.x, intersectionPoint.z)
-								end
-							end
+					local intersection = LineSegment(Point(myHero.x, myHero.z), Point(spell.endPos.x, spell.endPos.z)):intersectionPoints(LineSegment(Point(ts.target.x, ts.target.z), Point(EPos.x, EPos.z)))[1]
+					if intersection and GetDistance(intersection) < QRange then
+						if myHero:CanUseSpell(_Q) == READY then
+							CastSpell(_Q, intersection.x, intersection.y)
 						end
+						if myHero:CanUseSpell(_W) == READY then
+							CastSpell(_W, intersection.x, intersection.y)
+							CastSpell(_W, intersection.x, intersection.y)
+						end
+						--for _, intersectionPoint in ipairs(intersection) do
+						--	if GetDistance(intersectionPoint) < QRange and intersectionPoint.z then
+						--		if myHero:CanUseSpell(_Q) == READY then
+						--			CastSpell(_Q, intersectionPoint.x, intersectionPoint.z)
+						--		end
+						--		if myHero:CanUseSpell(_W) == READY then
+						--			CastSpell(_W, intersectionPoint.x, intersectionPoint.z)
+						--			CastSpell(_W, intersectionPoint.x, intersectionPoint.z)
+						--		end
+						--	end
+						--end
 					elseif myHero:CanUseSpell(_W) == READY then
 						CastSpell(_W, spell.endPos.x, spell.endPos.z)
 						CastSpell(_W, spell.endPos.x, spell.endPos.z)
@@ -153,11 +160,8 @@ function PewPew()
 			end
 		end
 	end
-	if myHero:CanUseSpell(_Q) ~= READY and myHero:CanUseSpell(_E) ~= READY and myHero:CanUseSpell(_R) == READY and getDmg("R", ts.target, myHero) > ts.target.health then
-		local ultPos = GetMEC(RRadius, RRange, ts.target)
-		if ultPos then
-			CastSpell(_R, ultPos.x, ultPos.z)
-		end
+	if myHero:CanUseSpell(_Q) ~= READY and myHero:CanUseSpell(_E) ~= READY and myHero:CanUseSpell(_R) == READY then
+		finishUlt()
 	end
 	if iZyraConfig.ultOnFive and myHero:CanUseSpell(_R) == READY then
 		ultOnFive()
@@ -212,9 +216,36 @@ function ultOnFive()
 	end
 	local ultPos = GetMEC(RRadius, RRange)
 	for _, enemy in ipairs(ultEnemies) do
-		if not ultPos:Contains(enemy) then return end
+		if GetDistnace(ultPos.point or ultPos.center, enemy) < RRange then return end
 	end
 	CastSpell(_R, ultPos.center.x, ultPos.center.z)
+end
+
+function finishUlt()
+	local killableEnemies, killableArray = {}, {}
+	for i, enemy in ipairs(GetEnemyHeroes()) do
+		if getDmg("R", enemy, myHero) > enemy.health then
+			killableEnemies[#killableEnemies+1] = enemy
+			killableArray[i] = true
+		else
+			killableArray[i] = false
+		end
+	end
+	local ultPosKillable, killPosCount = MEC(killableEnemies):Compute(), 0
+	local ultPosEnemies, enemiesPosCount, enemiesKillPosCount = MEC(GetEnemyHeroes()):Compute(), 0, 0
+	if ultPosKillable and ultPosEnemies then
+		for i, enemy in ipairs(GetEnemyHeroes()) do
+			if GetDistance(ultPosKillable.point or ultPosKillable.center, enemy) < RRange then killPosCount = killPosCount + 1 end
+			if GetDistance(ultPosEnemies.point or ultPosenemies.center, enemy) < RRange then enemiesPosCount = enemiesPosCount + 1 if killableArray[i] then enemiesKillPosCount = enemiesKillPosCount + 1 end end
+		end
+		if enemiesKillPosCount >= killPosCount and enemiesKillPosCount > 0 then
+			CastSpell(_R, ultPosEnemies.x, ultPosEnemies.z)
+		elseif killPosCount > 0 and killPosCount > enemiesKillPosCount then
+			CastSpell(_R, ultPosKillable.x, ultPosKillable.z)
+		elseif enemiesKillPosCount > 0 and enemiesPosCount > enemiesKillPosCount then
+			CastSpell(_R, ultPosEnemies.x, ultPosEnemies.z)
+		end
+	end
 end
 
 function autoIgnite()
@@ -252,3 +283,7 @@ end
 function updateItems()
 
 end
+
+--function LazyDrawCircle(unit, radius, colour)
+--	DrawCircle(unit.x, unit.y, unit.z, radius, colour)
+--end
