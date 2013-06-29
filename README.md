@@ -4,7 +4,10 @@ Current Scripts:
 - iLux - Penta Rainbows
 - Icy iLiss
 - iCass Classic - No Chickenshit
-- iRelia (Beta)
-- iFizz (Beta)
+
+Half-assed shitty, unfinished, W.I.P. scripts: 
+- iRelia
+- iFizz
+- iZyra
 
 Note: The scripts use VIP predictions and some use Klokje's Collision lib. You can't use them without being a VIP.
