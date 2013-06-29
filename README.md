@@ -54,3 +54,13 @@
 > - Munching Minion - \*[TBA] Auto Farm with AA and Q\*
 > - Auto Passive - *Automatically uses Passive*
 > - Ult Enemy Team - *Automatically uses ultimate when the whole enemy team can be hit.*
+
+------------------
+### Other Scripts:
+######*These are mockups, uncategorized or merely hosted here for the sake of availability. If you're not particularly interested in these, don't pay attention to them. :wink:*
+
+- ####Items Class
+> ######A mockup for Klokje, made out of boredom.
+
+- ####[Stream Tools] (http://botoflegends.com/forum/topic/4741-script-stream-tools/)
+> ######Automatically disables overlay depending on running processes. Lacking ideas and suggestions.
