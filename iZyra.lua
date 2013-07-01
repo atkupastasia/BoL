@@ -131,8 +131,10 @@ function OnProcessSpell(unit, spell)
 						--	end
 						--end
 					elseif myHero:CanUseSpell(_W) == READY then
-						CastSpell(_W, spell.endPos.x, spell.endPos.z)
-						CastSpell(_W, spell.endPos.x, spell.endPos.z)
+						Packet("S_CAST", {spellId = _W, fromX = spell.endPos.x, fromY = spell.endPos.z, toX = spell.endPos.x, toY = spell.endPos.z}):send()
+						Packet("S_CAST", {spellId = _W, fromX = spell.endPos.x, fromY = spell.endPos.z, toX = spell.endPos.x, toY = spell.endPos.z}):send()
+						--CastSpell(_W, spell.endPos.x, spell.endPos.z)
+						--CastSpell(_W, spell.endPos.x, spell.endPos.z)
 					end
 				end
 			end
@@ -148,6 +150,7 @@ function PewPew()
 		local EPos = GetEPrediction(ts.target)
 		if EPos then
 			CastSpell(_E, EPos.x, EPos.z)
+			Packet("S_CAST", {spellId = _W, fromX = EPos.x, fromY = EPos.z, toX = EPos.x, toY = EPos.z}):send()
 		end
 	end
 	if myHero:CanUseSpell(_Q) == READY then
@@ -216,7 +219,7 @@ function ultOnFive()
 	end
 	local ultPos = GetMEC(RRadius, RRange)
 	for _, enemy in ipairs(ultEnemies) do
-		if GetDistnace(ultPos.point or ultPos.center, enemy) < RRange then return end
+		if GetDistance(ultPos.point or ultPos.center, enemy) < RRange then return end
 	end
 	CastSpell(_R, ultPos.center.x, ultPos.center.z)
 end
@@ -236,7 +239,7 @@ function finishUlt()
 	if ultPosKillable and ultPosEnemies then
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if GetDistance(ultPosKillable.point or ultPosKillable.center, enemy) < RRange then killPosCount = killPosCount + 1 end
-			if GetDistance(ultPosEnemies.point or ultPosenemies.center, enemy) < RRange then enemiesPosCount = enemiesPosCount + 1 if killableArray[i] then enemiesKillPosCount = enemiesKillPosCount + 1 end end
+			if GetDistance(ultPosEnemies.point or ultPosEnemies.center, enemy) < RRange then enemiesPosCount = enemiesPosCount + 1 if killableArray[i] then enemiesKillPosCount = enemiesKillPosCount + 1 end end
 		end
 		if enemiesKillPosCount >= killPosCount and enemiesKillPosCount > 0 then
 			CastSpell(_R, ultPosEnemies.x, ultPosEnemies.z)
