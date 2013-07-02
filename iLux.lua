@@ -1,42 +1,39 @@
---[[ iLux - Penta Rainbows by Apple ]]--
+--[[	iLux - Penta Rainbows by Apple 
+		Special Thanks to Icy for being my testing bitch and being open to every sorts of testing. ^-^
 
---[[ Special Thanks to Icy for being my testing bitch and being open to every sorts of testing. ^-^ ]]--
-
---[[ FUCK YEAH, IT'S A MOTHERFUCKING UNICORN! Cheers to Rafaelinux!
-                          ,`,`,`,`,                   
-    . . . .               `\`\`\`\;                   
-    `\`\`\`\`,            ~|;!;!;\!                   
-     ~\;\;\;\|\          (--,!!!~`!       .           
-    (--,\\\===~\         (--,|||~`!     ./            
-     (--,\\\===~\         `,-,~,=,:. _,//             
-      (--,\\\==~`\        ~-=~-.---|\;/J,             
-       (--,\\\((```==.    ~'`~/       a |             
-         (-,.\\('('(`\\.  ~'=~|     \_.  \            
-            (,--(,(,(,'\\. ~'=|       \\_;>           
-              (,-( ,(,(,;\\ ~=/        \              
-              (,-/ (.(.(,;\\,/          )             
-               (,--/,;,;,;,\\         ./------.       
-                 (==,-;-'`;'         /_,----`. \      
-         ,.--_,__.-'                    `--.  ` \     
-        (='~-_,--/        ,       ,!,___--. \  \_)    
-       (-/~(     |         \   ,_-         | ) /_|    
-       (~/((\    )\._,      |-'         _,/ /         
-        \\))))  /   ./~.    |           \_\;          
-     ,__/////  /   /.## )  / @##.                     
-      '===~'   |  |#@&:(, <. &%%::&@##.               
-              #/ / %%00  \. \0000000%%:&@#            
-           #@&/ /          \_\      '00%:&@#          
-        #@&:/_!/            >_\         '0%:&@#       
-      #@&:%0                              0%:&@#      
-    #@&:%0                                  0%:&@#    
-  #@&:%0                                     0%:&@#   
-  "" ' "                                       " ' "" 
-
-  ]]
-
-require "Collision"
+		FUCK YEAH, IT'S A MOTHERFUCKING UNICORN! Cheers to Rafaelinux!
+	                          ,`,`,`,`,                   
+	    . . . .               `\`\`\`\;                   
+	    `\`\`\`\`,            ~|;!;!;\!                   
+	     ~\;\;\;\|\          (--,!!!~`!       .           
+	    (--,\\\===~\         (--,|||~`!     ./            
+	     (--,\\\===~\         `,-,~,=,:. _,//             
+	      (--,\\\==~`\        ~-=~-.---|\;/J,             
+	       (--,\\\((```==.    ~'`~/       a |             
+	         (-,.\\('('(`\\.  ~'=~|     \_.  \            
+	            (,--(,(,(,'\\. ~'=|       \\_;>           
+	              (,-( ,(,(,;\\ ~=/        \              
+	              (,-/ (.(.(,;\\,/          )             
+	               (,--/,;,;,;,\\         ./------.       
+	                 (==,-;-'`;'         /_,----`. \      
+	         ,.--_,__.-'                    `--.  ` \     
+	        (='~-_,--/        ,       ,!,___--. \  \_)    
+	       (-/~(     |         \   ,_-         | ) /_|    
+	       (~/((\    )\._,      |-'         _,/ /         
+	        \\))))  /   ./~.    |           \_\;          
+	     ,__/////  /   /.## )  / @##.                     
+	      '===~'   |  |#@&:(, <. &%%::&@##.               
+	              #/ / %%00  \. \0000000%%:&@#            
+	           #@&/ /          \_\      '00%:&@#          
+	        #@&:/_!/            >_\         '0%:&@#       
+	      #@&:%0                              0%:&@#      
+	    #@&:%0                                  0%:&@#    
+	  #@&:%0                                     0%:&@#   
+	  "" ' "                                       " ' "" 	]]
 
 if myHero.charName ~= "Lux" then return end
+
+require "Collision"
 
 --[[ Config ]]--
 
@@ -55,29 +52,23 @@ local useNewCombo = true
 
 --[[ Constants ]]--
 
-local AARange = 550
-local QRange = 1150
+local QRange, QSpeed, QDelay, QWidth = 1150, 1175, 0.250, 80
 local WRange = 1050
-local ERange = 1100
-local RRange = 3000
+local ERange, ESpeed, EDelay, ERadius = 1100, 1300, 0.150, 275
+local RRange, RSpeed, RDelay, RWidth = 3000, math.huge, 0.700, 200
+
+local AARange = 550
 local igniteRange = 600
 local defaultItemRange = 700
-
-local QWidth = 80
-local QSpeed = 1175
-local ERadius = 275
-local ESpeed = 1300
-local RWidth = 200
-local RSpeed = math.huge
 
 --[[ Script Variables ]]--
 
 local ts = TargetSelector(TARGET_LESS_CAST,QRange,DAMAGE_MAGIC,false)
-local tpQ = TargetPredictionVIP(QRange, QSpeed, 0.250, QWidth)
-local tpQCollision = Collision(QRange, QSpeed, 0.250, QWidth)
-local tpE = TargetPredictionVIP(ERange, ESpeed, 0.150, ERadius)
-local tpR = TargetPredictionVIP(RRange, RSpeed, 0.700, RWidth)
-local tpRHealth = TargetPrediction(RRange, RSpeed, 700, RWidth)
+local tpQ = TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth)
+local tpQCollision = Collision(QRange, QSpeed, QDelay, QWidth)
+local tpE = TargetPredictionVIP(ERange, ESpeed, EDelay, ERadius*2)
+local tpR = TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth)
+local tpRHealth = TargetPrediction(RRange, RSpeed, RDelay*1000, RWidth)
 
 local igniteSlot = nil
 local EParticle = nil
@@ -122,8 +113,8 @@ function OnLoad()
 	iLuxConfig = scriptConfig("iLux - Penta Rainbows", "iLux")
 
 	iLuxConfig:addParam("pewpew","PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
-	iLuxConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
-	iLuxConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false, HK3)
+	iLuxConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
+	iLuxConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK3)
 
 	iLuxConfig:addParam("QWithSingleCollide", "Q With Single Minion Collision", SCRIPT_PARAM_ONOFF, false)
 	iLuxConfig:addParam("UseUlt", "Ultimate in Combo", SCRIPT_PARAM_ONOFF, true)
@@ -719,67 +710,3 @@ function OnProcessSpell(object, spell)
 		end
 	end
 end
-
---[[ Changelog, so I can keep track of the shit I have edited. I forget it otherwise...
-
-v1.0 
-- Initial release
-
-v1.1
-- Fixed ERadius
-- Fixed EParticle detection
-- DERP, I feel retarded reading through my own code again...
-- Added Q with a single minion in between.
-- Added move to mouse during PewPewPewPewPew
-- Tweaked Auto E Shit.
-- Increased Q Width
-- Fixed lack of collision detection when the target was snared. /facepalm
-
-v1.1.1
-- Quick fix: igniteSlot check.
-
-v1.1.2
-- Tiny tiny minuscule tweaks. 
-
-v1.2
-- Tweaked prediction
-- ZOMGWTFFTWRAINBOWSTEALINGBUFFS
-
- No need for a changelog anymore. I now haz Github! :D
-
-]]-- <INSERT_INCREDIBLE_FUCKING_RAINBOWS_UNICORN_HERE> --v
-
---[[ FUCK YEAH, IT'S A MOTHERFUCKING UNICORN! Cheers to Rafaelinux!
-                          ,`,`,`,`,                   
-    . . . .               `\`\`\`\;                   
-    `\`\`\`\`,            ~|;!;!;\!                   
-     ~\;\;\;\|\          (--,!!!~`!       .           
-    (--,\\\===~\         (--,|||~`!     ./            
-     (--,\\\===~\         `,-,~,=,:. _,//             
-      (--,\\\==~`\        ~-=~-.---|\;/J,             
-       (--,\\\((```==.    ~'`~/       a |             
-         (-,.\\('('(`\\.  ~'=~|     \_.  \            
-            (,--(,(,(,'\\. ~'=|       \\_;>           
-              (,-( ,(,(,;\\ ~=/        \              
-              (,-/ (.(.(,;\\,/          )             
-               (,--/,;,;,;,\\         ./------.       
-                 (==,-;-'`;'         /_,----`. \      
-         ,.--_,__.-'                    `--.  ` \     
-        (='~-_,--/        ,       ,!,___--. \  \_)    
-       (-/~(     |         \   ,_-         | ) /_|    
-       (~/((\    )\._,      |-'         _,/ /         
-        \\))))  /   ./~.    |           \_\;          
-     ,__/////  /   /.## )  / @##.                     
-      '===~'   |  |#@&:(, <. &%%::&@##.               
-              #/ / %%00  \. \0000000%%:&@#            
-           #@&/ /          \_\      '00%:&@#          
-        #@&:/_!/            >_\         '0%:&@#       
-      #@&:%0                              0%:&@#      
-    #@&:%0                                  0%:&@#    
-  #@&:%0                                     0%:&@#   
-  "" ' "                                       " ' "" 
-
-  Notes:
-  - Block missing ultimates
-
-  ]]
