@@ -34,6 +34,13 @@
 ------------------
 ###Unfinished/Partial/WIP Scripts:
 ######*Please send me a PM or yell at me in the shoutbox if you have any suggestions or ideas for these scripts. There are no threads for these as they are not finished yet.*
+- ####iYo
+> ###### Features
+> - PewPew! - *Main Combo*
+> - Munching Minions - *Auto Farm with AA and W*
+> - Orb Walking - *Orb Walking like a pro*
+> - Auto Ultimate - *Zombies incoming!*
+
 - ####iRelia
 > ###### Features
 > - PewPew! - *Main Combo*
