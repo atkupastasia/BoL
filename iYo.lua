@@ -21,7 +21,7 @@ local AABase = 0.908333333
 
 --[[ Script Variables ]]--
 
-local ts = TargetSelector(TARGET_LOW_HP_PRIORITY,WRange,DAMAGE_PHYSICAL,false)
+local ts = TargetSelector(TARGET_LOW_HP_PRIORITY, WRange, DAMAGE_PHYSICAL, true)
 local tpW = TargetPredictionVIP(WRange, WSpeed, WDelay, WRadius*2)
 
 local igniteSlot
@@ -63,16 +63,21 @@ function OnLoad()
 end
 
 function OnTick()
+	ts.range = WRange
 	ts:update()
 	--updateItems()
 	AARange = myHero.range + GetDistance(myHero.minBBox)
-	AADelay = (1000/(0.625*myHero.attackSpeed) + GetLatency())
+	AADelay = (1000/(0.625*myHero.attackSpeed) - GetLatency() / 2)
 	if ultClone and not ultClone.valid then ultClone = nil end
 
 	if not myHero.dead then
 		autoIgnite()
-		if iYoConfig.pewpew then PewPew()
-		elseif iYoConfig.autoFarm then autoFarm() end
+		if iYoConfig.pewpew then
+			PewPew()
+		else
+			if not ValidTarget(ts.target) then MuramanaOff() end
+			if iYoConfig.autoFarm then autoFarm() end
+		end
 		if iYoConfig.harass then Poke() end
 		if iYoConfigUltimate.autoUlt then autoUlt() end
 	end
@@ -118,8 +123,12 @@ function PewPew()
 			CastSpell(_W, WPos.x, WPos.z)
 		end
 	end
+
+	-- Melee Part
+	ts.range = AARange
+	ts:update()
 	if iYoConfig.orbWalk then
-		if GetDistance(ts.target) < AARange then
+		if ValidTarget(ts.target) then
 			if GetTickCount() - lastAA > AADelay / 2 and GetTickCount() < lastAA + AADelay then
 				if myHero:CanUseSpell(_Q) == READY then
 					CastSpell(_Q)
@@ -152,6 +161,9 @@ end
 function autoUlt()
 	if not myHero:CanUseSpell(_R) == READY then return end
 	local ultTarget
+	if myHero.health / myHero.maxHealth < 0.2 and CountEnemies(1000, myHero) > 0 then
+		ultTarget = myHero
+	end
 	for _, ally in ipairs(GetAllyHeroes()) do
 		if iYoConfigUltimate[ally.charName] and ally.health / ally.maxHealth < 0.2 and GetDistance(ally) <= RRange and CountEnemies(1000, ally) > 0 then
 			if not ultTarget or ultTarget.health > ally.health then
