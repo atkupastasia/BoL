@@ -29,15 +29,6 @@ end
 
 --[[ Main Functions ]]--
 
-function iOrbWalker:Move(movePos)
-	assert(movePos and movePos.x and movePos.z, "Error: iOrbWalker:Move(movePos), invalid movePos.")
-	if self:GetStage() ~= STAGE_WINDUP then
-		myHero:MoveTo(movePos.x, movePos.z)
-		return true
-	end
-	return false
-end
-
 function iOrbWalker:Orbwalk(movePos, target)
 	assert(movePos and movePos.x and movePos.z, "Error: iOrbWalker:Orbwalk(movePos, target), invalid movePos.")
 	if self:GetStage() == STAGE_NONE and ValidTarget(target, self.AARange) then
@@ -55,6 +46,49 @@ function iOrbWalker:Attack(target)
 	end
 	return false
 end
+
+function iOrbWalker:Move(movePos)
+	assert(movePos and movePos.x and movePos.z, "Error: iOrbWalker:Move(movePos), invalid movePos.")
+	if self:GetStage() ~= STAGE_WINDUP then
+		myHero:MoveTo(movePos.x, movePos.z)
+		return true
+	end
+	return false
+end
+
+--[[ Manual Orbwalking (Placed in OnSendPacket) ]]--
+
+function iOrbWalker:ManualOrbwalk(packet)
+	if pack.header == 0x71 then
+		if self:GetStage() == STAGE_WINDUP then
+			packet:Block()
+		elseif self:GetStage() == STAGE_ORBWALK then
+			local pPacket = Packet(packet)
+			packet:Block()
+			myHero:Move(pPacket.values.x, pPacket.values.z)
+			return {x = pPacket.values.x, z = pPacket.values.z}
+		else
+			local pPacket = Packet(packet)
+			packet:Block()
+			for _, enemy in ipairs(GetEnemyHeroes()) do
+				if GetDistance(pPacket.values, enemy) < 50 then
+					myHero:Attack(enemy)
+					return enemy
+				end
+			end
+		end
+	end
+end
+
+function iOrbWalker:ManualBlock(packet)
+	if pack.header == 0x71 then
+		if self:GetStage() == STAGE_WINDUP then
+			packet:Block()
+		end
+	end
+end
+
+--[[ Information ]]--
 
 function iOrbWalker:GetStage()
 	if GetTickCount() > self.NextShot then return STAGE_NONE end
@@ -74,9 +108,9 @@ end
 --[[ Configuration Functions ]]--
 
 function iOrbWalker:addAA(AAName) -- Add AA spell
-	assert(type(AAName) == "string", "Error: iOrbWalker:addAA(AAName), <string> expected.")
+	assert(AAName == nil or type(AAName) == "string", "Error: iOrbWalker:addAA(AAName), <string> or nil expected.")
 	if not self.AASpells then self.AASpells = {} end
-	self.AASpells[#self.AASpells+1] = AAName
+	self.AASpells[#self.AASpells+1] = AAName or "attack"
 end
 
 function iOrbWalker:addReset(resetName) -- Add AA-timer resetting spell
