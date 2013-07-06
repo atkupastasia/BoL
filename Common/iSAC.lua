@@ -161,7 +161,7 @@ function iCaster:Cast(target, minHitChance)
 	elseif self.spellType == SPELL_LINEAR or self.spellType == SPELL_CIRCLE then
 		if self.pred and ValidTarget(target) then
 			local spellPos,_ = self.pred:GetPrediction(target)
-			if spellPos and (not minHitChance or self.pred:GetHitChance(target) > minHitChance) then
+			if spellPos and (not VIP_USER or not minHitChance or self.pred:GetHitChance(target) > minHitChance) then
 				CastSpell(self.spell, spellPos.x, spellPos.z)
 				return true
 			end
@@ -169,7 +169,7 @@ function iCaster:Cast(target, minHitChance)
 	elseif self.spellType == SPELL_LINEAR_COL then
 		if self.pred and ValidTarget(target) then
 			local spellPos,_ = self.pred:GetPrediction(target)
-			if spellPos and (not minHitChance or self.pred:GetHitChance(target) > minHitChance) then
+			if spellPos and (not VIP_USER or not minHitChance or self.pred:GetHitChance(target) > minHitChance) then
 				if self.coll then
 					local willCollide,_ = self.coll:GetMinionCollision(myHero, spellPos)
 					if not willCollide then
@@ -228,6 +228,20 @@ end
 
 function iCaster:Ready()
 	return myHero:CanUseSpell(self.spell) == READY
+end
+
+function iCaster:GetPrediction(target)
+	if self.pred and ValidTarget(target) then return self.pred:GetPrediction(target) end
+end
+
+function iCaster:GetCollision(spellPos)
+	if spellPos and spellPos.x and spellPos.z then
+		if self.coll then
+			return self.coll:GetMinionCollision(myHero, spellPos)
+		else
+			return iCollision(spellPos, self.width)
+		end
+	end
 end
 
 --[[ iSummoners ]]--
