@@ -287,6 +287,14 @@ function iSummoners:Ready(spell)
 	return false
 end
 
+function iSummoners:AutoAll()
+	self:AutoIgnite()
+	self:AutoBarrier()
+	self:AutoRevive()
+	self:AutoClarity()
+	self:AutoHeal()
+end
+
 function iSummoners:AutoIgnite(dmgMultiplier)
 	assert(not dmgMultiplier or (type(dmgMultiplier) == "number" and dmgMultiplier <= 100 and dmgMultiplier > 0), "Error: iSummoners:AutoIgnite(dmgMultiplier, invalid dmgMultiplier.")
 	if self.Ignite and not myHero.dead and myHero:CanUseSpell(self.Ignite.slot) == READY then
