@@ -272,6 +272,21 @@ function iSummoners:__init()
 	self[self.SUMMONER_2.shortName] = self.SUMMONER_2
 end
 
+function iSummoners:Ready(spell)
+	if type(spell) == "number" then
+		if spell == 1 or spell == 2 then
+			return myHero:CanUseSpell(self["SUMMONER_"..spell].slot) == READY
+		elseif spell == SUMMONER_1 or spell == SUMMONER_2 then
+			return myHero:CanUseSpell(spell) == READY
+		end
+	elseif type(spell) == "string" then
+		if self[spell] then
+			return myHero:CanUseSpell(self[spell].slot) == READY
+		end
+	end
+	return false
+end
+
 function iSummoners:AutoIgnite(dmgMultiplier)
 	assert(not dmgMultiplier or (type(dmgMultiplier) == "number" and dmgMultiplier <= 100 and dmgMultiplier > 0), "Error: iSummoners:AutoIgnite(dmgMultiplier, invalid dmgMultiplier.")
 	if self.Ignite and not myHero.dead and myHero:CanUseSpell(self.Ignite.slot) == READY then
@@ -420,10 +435,21 @@ function iTems:add(name, ID, range, extraOptions)
 end
 
 function iTems:update()
-	for itemName, item in pairs(self.items) do
+	for _, item in pairs(self.items) do
 		item.slot = GetInventorySlotItem(item.ID)
 		item.ready = (item.slot and myHero:CanUseSpell(item.slot) == READY or false)
 	end
+end
+
+function iTems:Ready(itemID)
+	if type(itemID) == "string" then return (self.items[itemID] and self.items[itemID].ready) end
+	if type(itemID) == "number" then
+		for _, item in pairs(self.items) do
+			if itemID == item.ID then
+				return item.ready
+			end
+		end
+	end		
 end
 
 function iTems:Have(itemID, unit)
