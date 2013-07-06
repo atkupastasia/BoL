@@ -33,15 +33,16 @@ function iOrbWalker:Move(movePos)
 	assert(movePos and movePos.x and movePos.z, "Error: iOrbWalker:Move(movePos), invalid movePos.")
 	if self:GetStage() ~= STAGE_WINDUP then
 		myHero:MoveTo(movePos.x, movePos.z)
+		return true
 	end
+	return false
 end
 
 function iOrbWalker:Orbwalk(movePos, target)
 	assert(movePos and movePos.x and movePos.z, "Error: iOrbWalker:Orbwalk(movePos, target), invalid movePos.")
-	assert(not target or ValidTarget(target), "Error: iOrbWalker:Orbwalk(movePos, target), invalid target.")
 	if self:GetStage() == STAGE_NONE and ValidTarget(target, self.AARange) then
 		myHero:Attack(target)
-	elseif self:GetStage() == STAGE_ORBWALK then
+	elseif self:GetStage() ~= STAGE_WINDUP then
 		myHero:MoveTo(movePos.x, movePos.z)
 	end
 end
@@ -50,7 +51,9 @@ function iOrbWalker:Attack(target)
 	assert(not target or ValidTarget(target), "Error: iOrbWalker:Attack(target), invalid target.")
 	if self:GetStage() == STAGE_NONE and ValidTarget(target, self.AARange) then
 		myHero:Attack(target)
+		return true
 	end
+	return false
 end
 
 function iOrbWalker:GetStage()
@@ -96,12 +99,12 @@ function iOrbWalker:OnProcessSpell(unit, spell)
 		if self.AASpells then
 			for _, AAName in ipairs(self.AASpells) do
 				if AAName == "attack" and spell.name:lower():find("attack") then -- Simple lowercase checking for "attack" for the lazy people who don't want to search for all the basic attack names (like me) 
-					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2
-					self.NextShot = GetTickCount() + spell.animationTime * 1000 - GetLatency() / 2
+					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + 20
+					self.NextShot = GetTickCount() + spell.animationTime * 1000
 					return
 				elseif spell.name:find(AAName) then
-					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2
-					self.NextShot = GetTickCount() + spell.animationTime * 1000 - GetLatency() / 2
+					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + 20
+					self.NextShot = GetTickCount() + spell.animationTime * 1000
 					return
 				end
 			end
@@ -130,10 +133,12 @@ function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisi
 	self.width = width
 	self.spellData = myHero:GetSpellData(spell)
 	if spellType == SPELL_LINEAR or spellType == SPELL_CIRCLE or spellType == SPELL_LINEAR_COL then
-		assert(type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width), "Error: iCaster:__init(spell, range, [spellType, speed, delay, width, useCollisionLib]), invalid arguments for skillshot-type.")
-		self.pred = VIP_USER and TargetPredictionVIP(range, speed, delay, width) or TargetPrediction(range, speed/1000, delay*1000, width)
-		if spellType == SPELL_LINEAR_COL then
-			self.coll = VIP_USER and useCollisionLib ~= false and Collision(range, speed, delay, width) or nil
+		if type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width) then
+			--assert(type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width), "Error: iCaster:__init(spell, range, [spellType, speed, delay, width, useCollisionLib]), invalid arguments for skillshot-type.")
+			self.pred = VIP_USER and TargetPredictionVIP(range, speed, delay, width) or TargetPrediction(range, speed/1000, delay*1000, width)
+			if spellType == SPELL_LINEAR_COL then
+				self.coll = VIP_USER and useCollisionLib ~= false and Collision(range, speed, delay, width) or nil
+			end
 		end
 	end
 end
@@ -208,9 +213,16 @@ function iCaster:CastMouse(spellPos, nearestTarget)
 end
 
 function iCaster:AACast(iOW, target, minHitChance) -- Cast after AA
-	if not iOW then return end
+	if not iOW then return false end
 	if iOW:GetStage() == STAGE_ORBWALK then
 		return self:Cast(target, minHitChance)
+	end
+end
+
+function iCaster:AACastMouse(iOW, spellPos, nearestTarget)
+	if not iOW then return false end
+	if iOW:GetStage() == STAGE_ORBWALK then
+		return self:CastMouse(spellPos, nearestTarget)
 	end
 end
 
