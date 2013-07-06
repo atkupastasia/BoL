@@ -207,9 +207,9 @@ function iCaster:CastMouse(spellPos, nearestTarget)
 	end
 end
 
-function iCaster:AACast(target, minHitChance) -- Cast after AA
-	if not self.iOW then self.iOW = iOrbWalker() end
-	if self.iOW:GetStage() == STAGE_ORBWALK then
+function iCaster:AACast(iOW, target, minHitChance) -- Cast after AA
+	if not iOW then return end
+	if iOW:GetStage() == STAGE_ORBWALK then
 		return self:Cast(target, minHitChance)
 	end
 end
