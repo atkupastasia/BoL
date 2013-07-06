@@ -96,7 +96,7 @@ function iOrbWalker:OnProcessSpell(unit, spell)
 				end
 			end
 		end
-		if self.AASpells then
+		if self.AASpells and spell.windUpTime and spell.animationTime then
 			for _, AAName in ipairs(self.AASpells) do
 				if AAName == "attack" and spell.name:lower():find("attack") then -- Simple lowercase checking for "attack" for the lazy people who don't want to search for all the basic attack names (like me) 
 					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + 20
@@ -133,11 +133,11 @@ function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisi
 	self.width = width
 	self.spellData = myHero:GetSpellData(spell)
 	if spellType == SPELL_LINEAR or spellType == SPELL_CIRCLE or spellType == SPELL_LINEAR_COL then
-		if type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width) then
+		if type(range) == "number" and (not speed or type(speed) == "number") and type(delay) == "number" and (type(width) == "number" or not width) then
 			--assert(type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width), "Error: iCaster:__init(spell, range, [spellType, speed, delay, width, useCollisionLib]), invalid arguments for skillshot-type.")
-			self.pred = VIP_USER and TargetPredictionVIP(range, speed, delay, width) or TargetPrediction(range, speed/1000, delay*1000, width)
+			self.pred = VIP_USER and TargetPredictionVIP(range, (speed or math.huge), delay, width) or TargetPrediction(range, (speed/1000 or math.huge), delay*1000, width)
 			if spellType == SPELL_LINEAR_COL then
-				self.coll = VIP_USER and useCollisionLib ~= false and Collision(range, speed, delay, width) or nil
+				self.coll = VIP_USER and useCollisionLib ~= false and Collision(range, (speed or math.huge), delay, width) or nil
 			end
 		end
 	end
