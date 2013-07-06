@@ -84,22 +84,26 @@ end
 
 function iOrbWalker:OnProcessSpell(unit, spell)
 	if unit.isMe then
-		for _, resetName in ipairs(self.ResetSpells) do
-			if spell.name:find(resetName) then
-				self.ShotCast = GetTickCount()
-				self.NextShot = GetTickCount()
-				return
+		if self.ResetSpells then
+			for _, resetName in ipairs(self.ResetSpells) do
+				if spell.name:find(resetName) then
+					self.ShotCast = GetTickCount()
+					self.NextShot = GetTickCount()
+					return
+				end
 			end
 		end
-		for _, AAName in ipairs(self.AASpells) do
-			if AAName == "attack" and spell.name:lower():find("attack") then -- Simple lowercase checking for "attack" for the lazy people who don't want to search for all the basic attack names (like me) 
-				self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2
-				self.NextShot = GetTickCount() + spell.animationTime * 1000 - GetLatency() / 2
-				return
-			elseif spell.name:find(AAName) then
-				self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2
-				self.NextShot = GetTickCount() + spell.animationTime * 1000 - GetLatency() / 2
-				return
+		if self.AASpells then
+			for _, AAName in ipairs(self.AASpells) do
+				if AAName == "attack" and spell.name:lower():find("attack") then -- Simple lowercase checking for "attack" for the lazy people who don't want to search for all the basic attack names (like me) 
+					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2
+					self.NextShot = GetTickCount() + spell.animationTime * 1000 - GetLatency() / 2
+					return
+				elseif spell.name:find(AAName) then
+					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2
+					self.NextShot = GetTickCount() + spell.animationTime * 1000 - GetLatency() / 2
+					return
+				end
 			end
 		end
 	end
@@ -124,6 +128,7 @@ function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisi
 	self.speed = speed
 	self.delay = delay
 	self.width = width
+	self.spellData = myHero:GetSpellData(spell)
 	if spellType == SPELL_LINEAR or spellType == SPELL_CIRCLE or spellType == SPELL_LINEAR_COL then
 		assert(type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width), "Error: iCaster:__init(spell, range, [spellType, speed, delay, width, useCollisionLib]), invalid arguments for skillshot-type.")
 		self.pred = VIP_USER and TargetPredictionVIP(range, speed, delay, width) or TargetPrediction(range, speed/1000, delay*1000, width)
@@ -134,22 +139,26 @@ function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisi
 end
 
 function iCaster:Cast(target, minHitChance)
-	if myHero:CanUseSpell(self.spell) ~= READY then return end
+	if myHero:CanUseSpell(self.spell) ~= READY then return false end
 	if self.spellType == SPELL_SELF then
 		CastSpell(self.spell)
+		return true
 	elseif self.spellType == SPELL_TARGETED then
 		if ValidTarget(target, self.range) then
 			CastSpell(self.spell, target)
+			return true
 		end
 	elseif self.spellType == SPELL_CONE then
 		if ValidTarget(target, self.range) then
 			CastSpell(self.spell, target.x, target.z)
+			return true
 		end
 	elseif self.spellType == SPELL_LINEAR or self.spellType == SPELL_CIRCLE then
 		if self.pred and ValidTarget(target) then
 			local spellPos,_ = self.pred:GetPrediction(target)
 			if spellPos and (not minHitChance or self.pred:GetHitChance(target) > minHitChance) then
 				CastSpell(self.spell, spellPos.x, spellPos.z)
+				return true
 			end
 		end
 	elseif self.spellType == SPELL_LINEAR_COL then
@@ -160,21 +169,25 @@ function iCaster:Cast(target, minHitChance)
 					local willCollide,_ = self.coll:GetMinionCollision(myHero, spellPos)
 					if not willCollide then
 						CastSpell(self.spell, spellPos.x, spellPos.z)
+						return true
 					end
 				elseif not iCollision(spellPos, self.width) then
 					CastSpell(self.spell, spellPos.x, spellPos.z)
+					return true
 				end
 			end
 		end
 	end
+	return false
 end
 
 function iCaster:CastMouse(spellPos, nearestTarget)
 	assert(spellPos and spellPos.x and spellPos.z, "Error: iCaster:CastMouse(spellPos, nearestTarget), invalid spellPos.")
 	assert(self.spellType ~= SPELL_TARGETED or (nearestTarget == nil or type(nearestTarget) == "boolean"), "Error: iCaster:CastMouse(spellPos, nearestTarget), <boolean> or nil expected for nearestTarget.")
-	if myHero:CanUseSpell(self.spell) ~= READY then return end
+	if myHero:CanUseSpell(self.spell) ~= READY then return false end
 	if self.spellType == SPELL_SELF then
 		CastSpell(self.spell)
+		return true
 	elseif self.spellType == SPELL_TARGETED then
 		if nearestTarget ~= false then
 			local targetEnemy
@@ -185,17 +198,19 @@ function iCaster:CastMouse(spellPos, nearestTarget)
 			end
 			if targetEnemy then
 				CastSpell(self.spell, targetEnemy)
+				return true
 			end
 		end
 	elseif self.spellType == SPELL_LINEAR_COL or self.spellType == SPELL_LINEAR or self.spellType == SPELL_CIRCLE or self.spellType == SPELL_CONE then
 		CastSpell(self.spell, spellPos.x, spellPos.z)
+		return true
 	end
 end
 
 function iCaster:AACast(target, minHitChance) -- Cast after AA
 	if not self.iOW then self.iOW = iOrbWalker() end
 	if self.iOW:GetStage() == STAGE_ORBWALK then
-		self:Cast(target, minHitChance)
+		return self:Cast(target, minHitChance)
 	end
 end
 
