@@ -719,6 +719,7 @@ end
 		Minions:setTrueDmg(damage)		-> Set additional on-hit True damage
 		Minions:marker(radius, colour, [thickness])		-> Draws circles around the killable minions. Place in OnDraw.
 		Minions:LastHit(range, [condition])			-> Last hits the killable minions. (Very basic) Use condition for more advanced configurability. condition must be a function or left omitted.
+		Minions:LastHitMove(movePos, range, [condition])		-> Same as Minions:LastHit, will move to movePos if no target.
 
 	Example:
 		local Minions = iMinions(1000)
@@ -787,6 +788,14 @@ function iMinions:LastHit(range, condition) -- Very basic, too tired to expand n
 			myHero:Attack(minion)
 			return minion
 		end
+	end
+	return nil
+end
+
+function iMinions:LastHitMove(movePos, range, condition)
+	assert(movePos and movePos.x and movePos.z, "Error: iMinions:LastHitMove(movePos, range, condition), invalid movePos.")
+	if not iMinions:LastHit(range, condition) then
+		myHero:MoveTo(movePos.x, movePos.z)
 	end
 end
 
