@@ -13,7 +13,44 @@
 
 if VIP_USER then require "Collision" end
 
---[[ iOrbWalker Class ]]--
+--[[ 	iOrbWalker Class 
+	
+	Methods:
+		local Orbwalker = iOrbWalker(AARange)
+
+	Functions:
+		OrbWalker:OnProcessSpell(unit, spell)	-> Update iOrbWalker, put in OnProcessSpell
+		OrbWalker:addAA([AAName])				-> Add autoattack spellname to iOrbWalker, uses most common logic if omitted or equals "attack"
+		OrbWalker:addReset(resetName) 			-> Add spellname with AA-timer reset.
+		OrbWalker:GetStage()					-> Returns current stage of AA: STAGE_WINDUP, STAGE_ORBWALK, STAGE_NONE
+		OrbWalker:GetDPS(unit, [target])		-> Returns basic DPS a unit will deal to the target, will calculate base DPS if target is omitted.
+
+		OrbWalker:OrbWalk(movePos, target)		-> Orbwalks, attacks target if possible, otherwise moves to movePos.
+		OrbWalker:Attack(target)				-> Attacks target if possible.
+		OrbWalker:Move(movePos)				-> Moves to movePos if possible.
+		OrbWalker:ManualOrbwalk(packet)		-> (VIP Only) Put in OnSendPacket, enables manual orbwalking with assistance.
+		OrbWalker:ManualBlock(packet)			-> (VIP Only) Put in OnSendPacket, blocks movement that will cancel AA's prematurely.
+
+	Members:
+		OrbWalker.AARange		-> Autoattack range
+		OrbWalker.ShotCast		-> Returns the tick when the windup of the last AA ends.
+		OrbWalker.NextShot		-> Returns the tick when the next AA is ready.
+
+	Example:
+		local OrbWalker = iOrbWalker(myHero.range)
+		local ts = TargetSelector(TARGET_LOW_HP, myHero.range)
+		OrbWalker:addAA()
+
+		function OnTick()
+			ts:update()
+			OrbWalker:OrbWalk(mousePos, ts.target)
+		end
+
+		function OnProcessSpell(unit, spell)
+			OrbWalker:OnProcessSpell(unit, spell)
+		end
+
+	]]--
 
 class 'iOrbWalker'
 
@@ -146,7 +183,47 @@ function iOrbWalker:OnProcessSpell(unit, spell)
 	end
 end
 
---[[ iCaster ]]--
+--[[ 	iCaster Class
+	
+	Methods:
+		local Spell = iCaster(spell, range, spellType, [speed, delay, width, useCollisionLib])
+
+		local Spell = iCaster(spell, range, SPELL_TARGETED)
+		local Spell = iCaster(spell, range, SPELL_LINEAR, speed, delay, [width])
+		local Spell = iCaster(spell, range, SPELL_CIRCLE, speed, delay, [width])
+		local Spell = iCaster(spell, range, SPELL_CONE)
+		local Spell = iCaster(spell, range, SPELL_LINEAR_COL, speed, delay, width, [useCollisionLib])
+		local Spell = iCaster(spell, range, SPELL_SELF)
+
+	Functions:
+		Spell:Cast(target, [minHitChance])		-> Casts spell at target. minHitChance is for skillshots, will use 0 if omitted.
+		Spell:CastMouse(spellPos, [nearestTarget])		-> Casts spell at spellPos. nearestTarget is for SPELL_TARGETED to target the nearest enemy champion to spellPos.
+		Spell:AACast(iOrbWalker, target, [minHitChance])		-> Casts spell right after autoattack. Requires an iOrbWalker instance.
+		Spell:AACastMouse(iOrbWalker, spellPos, [nearestTarget])		-> Casts spell right after autoattack at spellPos. Requires an iOrbWalker instance.
+		Spell:Ready()		-> Returns true/false
+		Spell:GetPrediction(target)		-> Returns the prediction for target
+		Spell:GetCollision(spellPos)		-> Returns if the spell will collide.
+
+	Members:
+		Spell.spell
+		Spell.range
+		Spell.spellType
+		Spell.speed
+		Spell.delay
+		Spell.width
+		Spell.spellData 	-> Same information as myHero:GetSpellData(spell) at the time the instance was initiated.
+		Spell.pred 			-> Prediction
+		Spell.coll 			-> Collision lib
+
+	Example:
+		local QSpell = iCaster(_Q, nil, SPELL_SELF)
+		local Orbwalker = iOrbWalker(myHero.range)
+
+		function OnTick()
+			QSpell:AACast(Orbwalker)
+		end
+
+ 	]]--
 
 class 'iCaster'
 
@@ -158,7 +235,7 @@ SPELL_LINEAR_COL = 5
 SPELL_SELF = 6
 
 function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisionLib)
-	assert(spell and range, "Error: iCaster:__init(spell, range, spellType, [speed, delay, width, useCollisionLib]), invalid arguments.")
+	assert(spell and (range or spellType == SPELL_SELF), "Error: iCaster:__init(spell, range, spellType, [speed, delay, width, useCollisionLib]), invalid arguments.")
 	self.spell = spell
 	self.spellType = spellType
 	self.range = range
@@ -283,7 +360,52 @@ function iCaster:GetCollision(spellPos)
 	end
 end
 
---[[ iSummoners ]]--
+--[[ iSummoners Class - Credits to LoLZinga for the base
+
+	Methods:
+		local Summoners = iSummoners()
+
+	Functions
+		Summoners:Ready(spell)		-> Returns true/false
+		Summoners:AutoAll()			-> Automatically uses all summoner spells.
+		Summoners:AutoIgnite([dmgMultiplier])		-> Auto ignites killable enemies. dmgMultiplier is in percentages between 1 and 100, can be left omitted.
+		Summoners:AutoBarrier([maxHPPerc, procRate])		-> Auto barriers on high damage. maxHPPerc and procRate are in percentages. Will only use barrier if your health is below maxHPPerc%. 
+		Summoners:AutoRevive([condition])		-> Auto revives you. Condition can be left omitted or should be a function returning true or false.
+		Summoners:AutoClarity([maxManaPerc, condition])		-> Auto uses clarity if your mana is below maxManaPerc%. Condition can be left omitted or should be a function returning a value.
+		Summoners:AutoHeal([maxHPPerc, procRate, useForTeam])		-> Auto heals you and your team. Works the same as AutoBarrier logically.
+		Summoners:Exhaust(target)		-> Exhausts the target.
+
+	Members:
+		Summoners.SUMMONER_1
+		Summoners.SUMMONER_2
+		Summoners.Clarity
+		Summoners.Garrison
+		Summoners.Ghost
+		Summoners.Heal
+		Summoners.Revive
+		Summoners.Smite
+		Summoners.Cleanse
+		Summoners.Teleport
+		Summoners.Barrier
+		Summoners.Exhaust
+		Summoners.Ignite
+		Summoners.Clairvoyance
+		Summoners.Flash
+
+		Sub-Members:
+			Summoners.<InsertSpellHere>.name
+			Summoners.<InsertSpellHere>.shortName
+			Summoners.<InsertSpellHere>.range
+			Summoners.<InsertSpellHere>.slot
+
+	Example:
+		local Summoners = iSummoners()
+
+		function OnTick()
+			Summoners:AutoAll()
+		end
+
+	]]--
 
 class 'iSummoners'
 local _SummonerSpells = {
@@ -440,7 +562,40 @@ function iSummoners:Exhaust(target) -- No AutoExhaust until I find a reliable lo
 	end
 end
 
---[[ iTems ]]--
+--[[ iTems Class
+
+	Methods:
+		Items = iTems()
+
+	Functions:
+		Items:add(name, ID, [range, extraOptions]) 	-> Adds an item to the instance. Name and ID required, range and extraOptions optional.
+		Items:update() 								-> Update the instance. Item ready statusses and slots.
+		Items:Have(itemID, [unit])					-> Check if the unit has the item. Returns true/false.
+		Items:Slot(itemID, [unit])					-> Check if the unit has the item. Returns true/false.
+		Items:Dmg(itemID, target, [source])			-> Returns the damage the item will deal on the target. Source optional, uses myHero if omitted.
+		Items:InRange(itemID, target, [source])		-> Check if the target is within range. Returns true/false.
+		
+		Items:Use(itemID, [nil, nil, condition])	-> Use the item(s). Condition is optional, should be a function returning a boolean if used.
+		Items:Use(itemID, target, [nil, condition])	-> itemID can be "all" if you wish to use all items.
+		Items:Use(itemID, pos.x, pos.z,[condition])	->
+
+	Members:
+		Items.items		-- Returns the table with all added items.
+	
+	Example Usage:
+		local items = Items()
+		
+		function OnLoad()
+			items:add("DFG", 3128, 600, {onlyOnKill = true})
+		end
+
+		function OnTick()
+			if ValidTarget(GetTarget()) then
+				items:Use("DFG", GetTarget(), nil, (function(item, target) return (target.health / target.maxHealth > 0.5) end))
+			end
+		end
+
+	]]--
 
 class 'iTems'
 
@@ -552,7 +707,28 @@ function iTems:Use(itemID, arg1, arg2, condition) -- Condition could be a functi
 	end
 end
 
---[[ iMinions ]]--
+--[[ 	iMinions Class
+	
+	Methods:
+		local Minions = iMinions(range, [includeAD])		-> Include AA damage if true or omitted. Set to false if you wish to use an instance for spells and not include AA damage.
+
+	Functions:
+		Minions:update()		-> Update the iMinions instance.
+		Minions:setADDmg(damage)		-> Set additional on-hit AD damage
+		Minions:setAPDmg(damage)		-> Set additional on-hit AP damage
+		Minions:setTrueDmg(damage)		-> Set additional on-hit True damage
+		Minions:marker(radius, colour, [thickness])		-> Draws circles around the killable minions. Place in OnDraw.
+		Minions:LastHit(range, [condition])			-> Last hits the killable minions. (Very basic) Use condition for more advanced configurability. condition must be a function or left omitted.
+
+	Example:
+		local Minions = iMinions(1000)
+
+		function OnDraw()
+			Minions:update()
+			Minions:marker(50, 0xFF80FF00, 10)
+		end
+
+]]--
 
 class 'iMinions'
 
