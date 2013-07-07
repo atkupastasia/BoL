@@ -478,7 +478,7 @@ function iSummoners:AutoBarrier(maxHPPerc, procRate)
 		if not self.Barrier.healthBefore then
 			self.Barrier.healthBefore = {}
 		elseif GetTickCount() >= self.Barrier.nextCheck then
-			if myHero:CanUseSpell(self.Barrier.slot) == READY then
+			if myHero:CanUseSpell(self.Barrier.slot) == READY and #self.Barrier.healthBefore > 1 then
 				local HPRatio = myHero.health / myHero.maxHealth
 				local procHP = self.Barrier.healthBefore[1] * procRate 
 				if myHero.health < procHP and maxHPPerc < HPRatio then
@@ -523,7 +523,7 @@ function iSummoners:AutoHeal(maxHPPerc, procRate, useForTeam)
 		if not self.Heal.healthBefore then
 			self.Heal.healthBefore = {}
 		elseif GetTickCount() >= self.Heal.nextCheck then
-			if myHero:CanUseSpell(self.Heal.slot) == READY then
+			if myHero:CanUseSpell(self.Heal.slot) == READY and #self.Heal.healthBefore[myHero.charName] > 1then
 				local HPRatio = myHero.health / myHero.maxHealth
 				local procHP = self.Heal.healthBefore[myHero.charName][1] * procRate 
 				if myHero.health < procHP and maxHPPerc < HPRatio then
