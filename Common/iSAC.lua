@@ -758,7 +758,7 @@ function iMinions:update()
 	self.killable = {}
 	for _, minion in ipairs(_enemyMinions.objects) do
 		if ValidTarget(minion) then
-			local damage = ((self.includeAD or self.ADDmg ~= 0) and (myHero:CalcDamage(minion, (self.includeAD and myHero.totalDamage) + self.ADDmg)) or 0) + (self.APDmg ~= 0 and myHero:CalcMagicDamage(minion, self.APDmg) or 0) + self.TrueDmg
+			local damage = ((self.includeAD or self.ADDmg ~= 0) and (myHero:CalcDamage(minion, (self.includeAD and myHero.totalDamage or 0) + self.ADDmg)) or 0) + (self.APDmg ~= 0 and myHero:CalcMagicDamage(minion, self.APDmg) or 0) + self.TrueDmg
 			if damage > minion.health then
 				self.killable[#self.killable+1] = minion
 			end
@@ -768,13 +768,15 @@ function iMinions:update()
 end
 
 function iMinions:marker(radius, colour, thickness)
-	for _, minion in ipairs(self.killable) do
-		if thickness and thickness > 1 then
-			for i = 1, thickness do
-				DrawCircle(minion.x, minion.y, minion.z, radius+i, colour)
+	if self.killable then
+		for _, minion in ipairs(self.killable) do
+			if thickness and thickness > 1 then
+				for i = 1, thickness do
+					DrawCircle(minion.x, minion.y, minion.z, radius+i, colour)
+				end
+			else
+				DrawCircle(minion.x, minion.y, minion.z, radius, colour)
 			end
-		else
-			DrawCircle(minion.x, minion.y, minion.z, radius, colour)
 		end
 	end
 end
