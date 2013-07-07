@@ -783,10 +783,12 @@ function iMinions:marker(radius, colour, thickness)
 end
 
 function iMinions:LastHit(range, condition) -- Very basic, too tired to expand now.
-	for _, minion in ipairs(self.killable) do
-		if GetDistance(minion) < range and (not condition or condition(minion)) then
-			myHero:Attack(minion)
-			return minion
+	if self.killable then
+		for _, minion in ipairs(self.killable) do
+			if GetDistance(minion) < range and (not condition or condition(minion)) then
+				myHero:Attack(minion)
+				return minion
+			end
 		end
 	end
 	return nil
