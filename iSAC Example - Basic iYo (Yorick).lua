@@ -48,9 +48,9 @@ function OnTick()
 	AARange = myHero.range + GetDistance(myHero.minBBox)
 	Orbwalker.AARange = AARange
 	Summoners:AutoAll()
-	iMinions:update()
+	Minions:update()
 
-	ts.range = WRange
+	ts.range = WSpell.range
 	ts:update()
 	if ValidTarget(ts.target) then MuramanaOn() else MuramanaOff() end
 
