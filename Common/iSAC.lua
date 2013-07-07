@@ -187,6 +187,11 @@ function iCaster:Cast(target, minHitChance)
 			CastSpell(self.spell, target)
 			return true
 		end
+	elseif self.spellType == SPELL_TARGETED_FRIENDLY then
+		if target ~= nil and not target.dead and GetDistance(target) < self.range and target.team == myHero.team then
+			CastSpell(self.spell, target)
+			return true
+		end
 	elseif self.spellType == SPELL_CONE then
 		if ValidTarget(target, self.range) then
 			CastSpell(self.spell, target.x, target.z)
@@ -577,8 +582,10 @@ function iMinions:update()
 	self.killable = {}
 	for _, minion in ipairs(_enemyMinions.objects) do
 		if ValidTarget(minion) then
-			local damage = ((self.includeAD or self.ADDmg ~= 0) and (myHero:CalcDamage((self.includeAD and myHero.totalDamage) + self.ADDmg, minion)) or 0) + (self.APDmg ~= 0 and myHero:CalcMagicDamage(self.APDmg, minion) or 0) + self.TrueDmg
-			self.killable[#self.killable+1] = minion
+			local damage = ((self.includeAD or self.ADDmg ~= 0) and (myHero:CalcDamage(minion, (self.includeAD and myHero.totalDamage) + self.ADDmg)) or 0) + (self.APDmg ~= 0 and myHero:CalcMagicDamage(minion, self.APDmg) or 0) + self.TrueDmg
+			if damage > minion.health then
+				self.killable[#self.killable+1] = minion
+			end
 		end
 	end
 	return self.killable
