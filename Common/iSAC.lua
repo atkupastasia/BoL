@@ -235,22 +235,22 @@ SPELL_LINEAR_COL = 5
 SPELL_SELF = 6
 
 function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisionLib)
-	assert(spell and (range or spellType == SPELL_SELF), "Error: iCaster:__init(spell, range, spellType, [speed, delay, width, useCollisionLib]), invalid arguments.")
+	--assert(spell and (range or spellType == SPELL_SELF), "Error: iCaster:__init(spell, range, spellType, [speed, delay, width, useCollisionLib]), invalid arguments.")
 	self.spell = spell
-	self.spellType = spellType
-	self.range = range
-	self.speed = speed
-	self.delay = delay
+	self.range = range or 0
+	self.spellType = spellType or SPELL_SELF
+	self.speed = speed or math.huge
+	self.delay = delay or 0
 	self.width = width
 	self.spellData = myHero:GetSpellData(spell)
 	if spellType == SPELL_LINEAR or spellType == SPELL_CIRCLE or spellType == SPELL_LINEAR_COL then
-		if type(range) == "number" and (not speed or type(speed) == "number") and type(delay) == "number" and (type(width) == "number" or not width) then
+		--if type(range) == "number" and (not speed or type(speed) == "number") and (not delay type(delay) == "number" and (type(width) == "number" or not width) then
 			--assert(type(range) == "number" and type(speed) == "number" and type(delay) == "number" and (type(width) == "number" or not width), "Error: iCaster:__init(spell, range, [spellType, speed, delay, width, useCollisionLib]), invalid arguments for skillshot-type.")
-			self.pred = VIP_USER and TargetPredictionVIP(range, (speed or math.huge), delay, width) or TargetPrediction(range, (speed/1000 or math.huge), delay*1000, width)
+			self.pred = VIP_USER and TargetPredictionVIP(range, speed, delay, width) or TargetPrediction(range, speed/1000, delay*1000, width)
 			if spellType == SPELL_LINEAR_COL then
 				self.coll = VIP_USER and useCollisionLib ~= false and Collision(range, (speed or math.huge), delay, width) or nil
 			end
-		end
+		--end
 	end
 end
 
@@ -796,9 +796,15 @@ end
 
 function iMinions:LastHitMove(movePos, range, condition)
 	assert(movePos and movePos.x and movePos.z, "Error: iMinions:LastHitMove(movePos, range, condition), invalid movePos.")
-	if not iMinions:LastHit(range, condition) then
-		myHero:MoveTo(movePos.x, movePos.z)
+	if self.killable then
+		for _, minion in ipairs(self.killable) do
+			if GetDistance(minion) < range and (not condition or condition(minion)) then
+				myHero:Attack(minion)
+				return minion
+			end
+		end
 	end
+	myHero:MoveTo(movePos.x, movePos.z)
 end
 
 --[[ Other General Functions ]]--
