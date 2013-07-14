@@ -12,6 +12,7 @@
 		]]--
 
 if VIP_USER then require "Collision" end
+local _customValues = assert(loadfile(LIB_PATH.."iSAC - Custom Values.lua"))()
 
 --[[ 	iOrbWalker Class 
 	
@@ -22,6 +23,7 @@ if VIP_USER then require "Collision" end
 		OrbWalker:OnProcessSpell(unit, spell)	-> Update iOrbWalker, put in OnProcessSpell
 		OrbWalker:addAA([AAName])				-> Add autoattack spellname to iOrbWalker, uses most common logic if omitted or equals "attack"
 		OrbWalker:addReset(resetName) 			-> Add spellname with AA-timer reset.
+		OrbWalker:removeAA(AAName)				-> Removes an autoattack from the list or adds the autoattack to the list of ignored attacks.
 		OrbWalker:GetStage()					-> Returns current stage of AA: STAGE_WINDUP, STAGE_ORBWALK, STAGE_NONE
 		OrbWalker:GetDPS(unit, [target])		-> Returns basic DPS a unit will deal to the target, will calculate base DPS if target is omitted.
 
@@ -58,10 +60,20 @@ STAGE_WINDUP = 1
 STAGE_ORBWALK = 2
 STAGE_NONE = 3
 
-function iOrbWalker:__init(AARange)
+function iOrbWalker:__init(AARange, useDefaultValues addDelay)
 	self.AARange = AARange or (myHero.range + GetDistance(myHero.minBBox))
+	self.addDelay = addDelay or 20
 	self.ShotCast = 0
 	self.NextShot = 0
+	self.windUpTime = 0
+	if useDefaultValues then
+		self:addAA()
+		self:addReset()
+	end
+end
+
+function iOrbWalker:__type()
+	return "iOrbWalker"
 end
 
 --[[ Main Functions ]]--
@@ -95,8 +107,9 @@ end
 
 --[[ Manual Orbwalking (Placed in OnSendPacket) ]]--
 
-function iOrbWalker:ManualOrbwalk(packet)
-	if pack.header == 0x71 then
+function iOrbWalker:ManualOrbwalk(packet, rangeFromMouse)
+	assert(rangeFromMouse == nil or type(rangeFromMouse) == "number", "Error: iOrbWalker:ManualOrbwalk(packet, rangeFromMouse) -> <packet><number> expected.")
+	if packet.header == 0x71 then
 		if self:GetStage() == STAGE_WINDUP then
 			packet:Block()
 		elseif self:GetStage() == STAGE_ORBWALK then
@@ -108,7 +121,7 @@ function iOrbWalker:ManualOrbwalk(packet)
 			local pPacket = Packet(packet)
 			packet:Block()
 			for _, enemy in ipairs(GetEnemyHeroes()) do
-				if GetDistance(pPacket.values, enemy) < 50 then
+				if GetDistance(pPacket.values, enemy) < (rangeFromMouse or 50) then
 					myHero:Attack(enemy)
 					return enemy
 				end
@@ -144,20 +157,99 @@ end
 
 --[[ Configuration Functions ]]--
 
-function iOrbWalker:addAA(AAName) -- Add AA spell
-	assert(AAName == nil or type(AAName) == "string", "Error: iOrbWalker:addAA(AAName), <string> or nil expected.")
-	if not self.AASpells then self.AASpells = {} end
-	self.AASpells[#self.AASpells+1] = AAName or "attack"
+function iOrbWalker:addAA(AAName, isAnimation) -- Add AA spell
+	assert(AAName == nil or type(AAName) == "string", "Error: iOrbWalker:addAA(AAName, isAnimation), <string> or nil expected.")
+	if isAnimation then
+		if AAName then
+			if not self.AASpellsAnim then self.AASpellsAnim = {} end
+			self.AASpellsAnim[#self.AASpellsAnim+1] = AAName
+		end
+	else
+		if not self.AASpells then self.AASpells = {} end
+		if not AAName then
+			self.AASpells[#self.AASpells+1] = "attack"
+			if _customValues and _customValues.AASpells then
+				if type(_customValues.AASpells[myHero.charName]) == "string" then
+					self.AASpells[#self.AASpells+1] = _customValues.AASpells[myHero.charName]
+				elseif type(_customValues.AASpells[myHero.charName]) == "table" then
+					for _, AAName in ipairs(_customValues.AASpells[myHero.charName]) do
+						self.AASpells[#self.AASpells+1] = AAName
+					end
+				end
+			end
+		else
+			self.AASpells[#self.AASpells+1] = AAName
+		end
+	end
 end
 
-function iOrbWalker:addReset(resetName) -- Add AA-timer resetting spell
-	assert(type(resetName) == "string", "Error: iOrbWalker:addReset(resetName), <string> expected.")
-	if not self.ResetSpells then self.ResetSpells = {} end
-	self.ResetSpells[#self.ResetSpells+1] = resetName
+function iOrbWalker:removeAA(AAName, isAnimation) -- Remove AA spell
+	if isAnimation then
+		if self.AASpellsAnim then
+			for i, AAName2 in ipairs(self.AASpellsAnim) do
+				if AAName2 == AAName then
+					table.remove(self.AASpellsAnim, i)
+					return
+				end
+			end
+		end
+	elseif self.AASpells then
+		for i, AAName2 in ipairs(self.AASpells) do
+			if AAName2 == AAName then
+				table.remove(self.AASpells, i)
+				return
+			end
+		end
+	end
+end
+
+function iOrbWalker:ignoreAA(AAName, isAnimation)
+	assert(type(resetName) == "string", "Error: iOrbWalker:ignoreAA(AAName), <string> expected.")
+	if isAnimation then
+		if not self.AASpellsIgnoreAnim then
+			self.AASpellsIgnoreAnim = {AAName}
+		else
+			self.AASpellsIgnoreAnim[#self.AASpellsIgnoreAnim+1] = AAName
+		end
+	elseif not self.AASpellsIgnore then
+		self.AASpellsIgnore = {AAName}
+	else
+		self.AASpellsIgnore[#self.AASpellsIgnore+1] = AAName
+	end
+end
+
+function iOrbWalker:addReset(resetName, isAnimation) -- Add AA-timer resetting spell
+	--assert(type(resetName) == "string", "Error: iOrbWalker:addReset(resetName), <string> expected.")
+	if isAnimation then
+		if resetName then
+			if not self.ResetSpellsAnim then self.ResetSpellsAnim = {} end
+			self.ResetSpellsAnim[#self.ResetSpellsAnim+1] = resetName
+		end
+	else
+		if not self.ResetSpells then self.ResetSpells = {} end
+		if not resetName then
+			if _customValues and _customValues.ResetSpells then
+				if type(_customValues.ResetSpells[myHero.charName]) == "string" then
+					self.ResetSpells[#self.ResetSpells+1] = _customValues.ResetSpells[myHero.charName]
+				elseif type(_customValues.ResetSpells[myHero.charName]) == "table" then
+					for _, resetName in ipairs(_customValues.ResetSpells[myHero.charName]) do
+						self.ResetSpells[#self.ResetSpells+1] = resetName
+					end
+				end
+			end
+		else
+			self.ResetSpells[#self.ResetSpells+1] = resetName
+		end
+	end
 end
 
 function iOrbWalker:OnProcessSpell(unit, spell)
 	if unit.isMe then
+		if self.AASpellsIgnore then
+			for _, AAName in ipairs(self.AASpellsIgnore) do
+				if spell.name:find(AAName) then return end
+			end
+		end
 		if self.ResetSpells then
 			for _, resetName in ipairs(self.ResetSpells) do
 				if spell.name:find(resetName) then
@@ -170,12 +262,44 @@ function iOrbWalker:OnProcessSpell(unit, spell)
 		if self.AASpells and spell.windUpTime and spell.animationTime then
 			for _, AAName in ipairs(self.AASpells) do
 				if AAName == "attack" and spell.name:lower():find("attack") then -- Simple lowercase checking for "attack" for the lazy people who don't want to search for all the basic attack names (like me) 
-					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + 20
+					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + self.addDelay
 					self.NextShot = GetTickCount() + spell.animationTime * 1000
+					self.windUpTime = spell.windUpTime
+					self.animationTime = spell.animationTime
 					return
 				elseif spell.name:find(AAName) then
-					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + 20
+					self.ShotCast = GetTickCount() + spell.windUpTime * 1000 - GetLatency() / 2 + self.addDelay
 					self.NextShot = GetTickCount() + spell.animationTime * 1000
+					self.windUpTime = spell.windUpTime
+					self.animationTime = spell.animationTime
+					return
+				end
+			end
+		end
+	end
+end
+
+function iOrbWalker:OnAnimation(unit, animation)
+	if unit.isMe then
+		if self.AASpellsIgnoreAnim then
+			for _, AAName in ipairs(self.AASpellsIgnoreAnim) do
+				if animation:find(AAName) then return end
+			end
+		end
+		if self.ResetSpellsAnim then
+			for _, resetName in ipairs(self.ResetSpellsAnim) do
+				if animation:find(resetName) then
+					self.ShotCast = GetTickCount()
+					self.NextShot = GetTickCount()
+					return
+				end
+			end
+		end
+		if self.AASpellsAnim and self.windUpTime and self.animationTime then
+			for _, AAName in ipairs(self.AASpellsAnim) do
+				if animation:find(AAName) then
+					self.ShotCast = GetTickCount() + self.windUpTime * 1000 - GetLatency() / 2 + self.addDelay
+					self.NextShot = GetTickCount() + self.animationTime * 1000
 					return
 				end
 			end
@@ -223,7 +347,7 @@ end
 			QSpell:AACast(Orbwalker)
 		end
 
- 	]]--
+	]]--
 
 class 'iCaster'
 
@@ -252,6 +376,10 @@ function iCaster:__init(spell, range, spellType, speed, delay, width, useCollisi
 			end
 		--end
 	end
+end
+
+function iCaster:__type()
+	return "iCaster"
 end
 
 function iCaster:Cast(target, minHitChance)
@@ -433,6 +561,10 @@ function iSummoners:__init()
 	self[self.SUMMONER_2.shortName] = self.SUMMONER_2
 end
 
+function iSummoners:__type()
+	return "iSummoners"
+end
+
 function iSummoners:Ready(spell)
 	if type(spell) == "number" then
 		if spell == 1 or spell == 2 then
@@ -522,6 +654,10 @@ function iSummoners:AutoHeal(maxHPPerc, procRate, useForTeam)
 		if not self.Heal.nextCheck then self.Heal.nextCheck = 0 end
 		if not self.Heal.healthBefore then
 			self.Heal.healthBefore = {}
+			for _, ally in ipairs(GetAllyHeroes()) do
+				self.Heal.healthBefore[ally.charName] = {}
+			end
+			self.Heal.healthBefore[myHero.charName] = {}
 		elseif GetTickCount() >= self.Heal.nextCheck then
 			if myHero:CanUseSpell(self.Heal.slot) == READY and #self.Heal.healthBefore[myHero.charName] > 1then
 				local HPRatio = myHero.health / myHero.maxHealth
@@ -565,7 +701,7 @@ end
 --[[ iTems Class
 
 	Methods:
-		Items = iTems()
+		local Items = iTems()
 
 	Functions:
 		Items:add(name, ID, [range, extraOptions]) 	-> Adds an item to the instance. Name and ID required, range and extraOptions optional.
@@ -583,7 +719,7 @@ end
 		Items.items		-- Returns the table with all added items.
 	
 	Example Usage:
-		local items = Items()
+		local items = iTems()
 		
 		function OnLoad()
 			items:add("DFG", 3128, 600, {onlyOnKill = true})
@@ -628,11 +764,18 @@ function iTems:__init()
 	self.items = {}
 end
 
+function iTems:__type()
+	return "iTems"
+end
+
+
 function iTems:add(name, ID, range, extraOptions)
 	assert(type(name) == "string" and type(ID) == "number" and (not range or range == math.huge or type(range) == "number") and (extraOptions == nil or type(extraOptions) == "table"))
 	self.items[name] = {ID = ID, range = range or math.huge, slot = nil, ready = false}
-	for key, value in pairs(extraOptions) do
-		self.items[name][key] = value
+	if extraOptions then
+		for key, value in pairs(extraOptions) do
+			self.items[name][key] = value
+		end
 	end
 end
 
@@ -707,10 +850,10 @@ function iTems:Use(itemID, arg1, arg2, condition) -- Condition could be a functi
 	end
 end
 
---[[ 	iMinions Class
+--[[ 	iMinionsOLD Class
 	
 	Methods:
-		local Minions = iMinions(range, [includeAD])		-> Include AA damage if true or omitted. Set to false if you wish to use an instance for spells and not include AA damage.
+		local Minions = iMinionsOLD(range, [includeAD])		-> Include AA damage if true or omitted. Set to false if you wish to use an instance for spells and not include AA damage.
 
 	Functions:
 		Minions:update()		-> Update the iMinions instance.
@@ -722,7 +865,7 @@ end
 		Minions:LastHitMove(movePos, range, [condition])		-> Same as Minions:LastHit, will move to movePos if no target.
 
 	Example:
-		local Minions = iMinions(1000)
+		local Minions = iMinionsOLD(1000)
 
 		function OnDraw()
 			Minions:update()
@@ -731,30 +874,28 @@ end
 
 ]]--
 
-class 'iMinions'
+class 'iMinionsOLD'
 
-local _enemyMinions, _lastMinionsUpdate = nil, 0
-
-function iMinions:__init(range, includeAD) -- includeAD adds myHero.totalDamage for AA's. Set to false if you wish to use iMinions for spells.
+function iMinionsOLD:__init(range, includeAD) -- includeAD adds myHero.totalDamage for AA's. Set to false if you wish to use iMinions for spells.
 	enemyMinions_update(range)
 	self.includeAD = includeAD ~= false
 	self.ADDmg, self.APDmg, self.TrueDmg = 0, 0, 0
 	self.killable = {}
 end
 
-function iMinions:setADDmg(damage) -- For additional on-hit AD damage
+function iMinionsOLD:setADDmg(damage) -- For additional on-hit AD damage
 	self.ADDmg = damage or 0
 end
 
-function iMinions:setAPDmg(damage) -- For additional on-hit AP damage
+function iMinionsOLD:setAPDmg(damage) -- For additional on-hit AP damage
 	self.APDmg = damage or 0
 end
 
-function iMinions:setTrueDmg(damage) -- For additional on-hit True damage
+function iMinionsOLD:setTrueDmg(damage) -- For additional on-hit True damage
 	self.TrueDmg = damage or 0
 end
 
-function iMinions:update()
+function iMinionsOLD:update()
 	enemyMinions_update()
 	self.killable = {}
 	for _, minion in ipairs(_enemyMinions.objects) do
@@ -768,7 +909,7 @@ function iMinions:update()
 	return self.killable
 end
 
-function iMinions:marker(radius, colour, thickness)
+function iMinionsOLD:marker(radius, colour, thickness)
 	if self.killable then
 		for _, minion in ipairs(self.killable) do
 			if thickness and thickness > 1 then
@@ -782,7 +923,7 @@ function iMinions:marker(radius, colour, thickness)
 	end
 end
 
-function iMinions:LastHit(range, condition) -- Very basic, too tired to expand now.
+function iMinionsOLD:LastHit(range, condition) -- Very basic, too tired to expand now.
 	if self.killable then
 		for _, minion in ipairs(self.killable) do
 			if GetDistance(minion) < range and (not condition or condition(minion)) then
@@ -794,7 +935,7 @@ function iMinions:LastHit(range, condition) -- Very basic, too tired to expand n
 	return nil
 end
 
-function iMinions:LastHitMove(movePos, range, condition)
+function iMinionsOLD:LastHitMove(movePos, range, condition)
 	assert(movePos and movePos.x and movePos.z, "Error: iMinions:LastHitMove(movePos, range, condition), invalid movePos.")
 	if self.killable then
 		for _, minion in ipairs(self.killable) do
@@ -809,16 +950,71 @@ end
 
 --[[ Other General Functions ]]--
 
+local _enemyMinions, _enemyMinionsUpdateDelay, _lastMinionsUpdate = nil, 0, 0
 function enemyMinions_update(range)
 	if not _enemyMinions then
 		_enemyMinions = minionManager(MINION_ENEMY, (range or 2000), myHero, MINION_SORT_HEALTH_ASC)
 	elseif range and range > _enemyMinions.range then
 		_enemyMinions.range = range
 	end
-	if _lastMinionsUpdate < GetTickCount() then
+	if _lastMinionsUpdate + _enemyMinionsUpdateDelay < GetTickCount() then
 		_enemyMinions:update()
 		_lastMinionsUpdate = GetTickCount()
 	end
+end
+
+function enemyMinions_setDelay(delay)
+	_enemyMinionsUpdateDelay = delay or 0
+end
+
+function getEnemyMinions()
+	enemyMinions_update()
+	return _enemyMinions.objects
+end
+
+local jungleCamps = {
+	["TT_Spiderboss7.1.1"] = true,
+	["Worm12.1.1"] = true,
+	["Dragon6.1.1"] = true,
+	["AncientGolem1.1.1"] = true,
+	["AncientGolem7.1.1"] =  true,
+	["LizardElder4.1.1"] =  true,
+	["LizardElder10.1.1"] = true,
+	["GiantWolf2.1.3"] = true,
+	["GiantWolf8.1.3"] = true,
+	["Wraith3.1.3"] = true,
+	["Wraith9.1.3"] = true,
+	["Golem5.1.2"] = true,
+	["Golem11.1.2"] = true,
+}
+local _jungleMinions = nil
+function getJungleMinions()
+	if not _jungleMinions then
+		_jungleMinions = {}
+		for i = 1, objManager.maxObjects do
+			local object = objManager:getObject(i)
+			if object and object.type == "obj_AI_Minion" and object.name and jungleCamps[object.name] then
+				_jungleMinions[#_jungleMinions+1] = object
+			end
+		end
+		function jungleMinions_OnCreateObj(object)
+			if object and object.type == "obj_AI_Minion" and object.name and jungleCamps[object.name] then
+				_jungleMinions[#_jungleMinions+1] = object
+			end
+		end
+		function jungleMinions_OnDeleteObj(object)
+			if object and object.type == "obj_AI_Minion" and object.name and jungleCamps[object.name] then
+				for i, minion in ipairs(_jungleMinions) do
+					if minion.name == object.name then
+						table.remove(_jungleMinions, i)
+					end
+				end
+			end
+		end
+		AddCreateObjCallback(jungleMinions_OnCreateObj)
+		AddDeleteObjCallback(jungleMinions_OnDeleteObj)
+	end
+	return _jungleMinions
 end
 
 function iCollision(endPos, width) -- Derp collision, altered a bit for own readability.
@@ -844,3 +1040,131 @@ function iCollision(endPos, width) -- Derp collision, altered a bit for own read
    end
    return false
 end
+
+--[[ iMinions Class - Rewritten ]]--
+
+class 'iMinions'
+
+local _minionAttacks, _incomingDamage = {obj_AI_Turret = {aaDelay = 150, projSpeed = 1.14}}, {}
+_minionAttacks[(myHero.team == TEAM_BLUE and "Blue" or "Red").."_Minion_Basic"] = {aaDelay = 400, projSpeed = math.huge}
+_minionAttacks[(myHero.team == TEAM_BLUE and "Blue" or "Red").."_Minion_Caster"] = {aaDelay = 484, projSpeed = 0.68}
+_minionAttacks[(myHero.team == TEAM_BLUE and "Blue" or "Red").."_Minion_Wizard"] = {aaDelay = 484, projSpeed = 0.68}
+_minionAttacks[(myHero.team == TEAM_BLUE and "Blue" or "Red").."_Minion_MechCannon"] = {aaDelay = 365, projSpeed = 1.18}
+
+function iMinions:__init(range, iOW, projSpeed)
+	local range = range or 1000
+	enemyMinions_update(range)
+	self.range = range
+	self.projSpeed = projSpeed or (_customValues and _customValues.projSpeeds and _customValues.projSpeeds[myHero.charName].projSpeed) or math.huge
+	self.ADDmg, self.APDmg, self.TrueDmg = 0, 0, 0
+	self.iOW = iOW
+	iMinions_AddProcSpell()
+end
+
+function iMinions:__type()
+	return "iMinions"
+end
+
+function iMinions:AddSpell(iSpell)
+	assert(iSpell:__type() == "iCaster", "Error: iMinions:AddSpell(iSpell), <iCaster> expected.")
+
+end
+
+function iMinions:SetBonusDmg(PhysDamage, MagicDamage, TrueDamage)
+	self.ADDmg = PhysDamage or self.ADDmg
+	self.APDmg = MagicDamage or self.APDmg
+	self.TrueDmg = TrueDamage or self.TrueDmg
+end
+
+function iMinions:SimpleLastHit(range)
+	enemyMinions_update()
+	for _, minion in ipairs(_enemyMinions.objects) do
+		if ValidTarget(minion, range) then
+			local AADamage = getDmg("AD", minion, myHero) + myHero:CalcDamage(minion, self.ADDmg) + myHero:CalcMagicDamage(minion, self.APDmg) + self.TrueDmg
+			if AADamage > minion.health then
+				myHero:Attack(minion)
+				return minion
+			end
+		end
+	end
+end
+
+function iMinions:LastHit(range, movePos)
+	assert(range == nil or type(range) == "number", "Error: iMinions:LastHit(Orbwalker, range, movePos), <number> or nil expected for range.")
+	assert(movePos == nil or (movePos.x and movePos.z), "Error: iMinions:LastHit(Orbwalker, range, movePos), invalid movePos.")
+	--assert(Orbwalker and Orbwalker:__type() == "iOrbWalker", "Error: iMinions:LastHit(Orbwalker, range, movePos), invalid Orbwalker.")
+	enemyMinions_update()
+	if not ValidTarget(self.target) then self.target = iMinions:GetNewCreep(1, range) end
+	if movePos then self.iOW:Orbwalk(movePos, self.target) else self.iOW:Attack(self.target) end
+end
+
+function iMinions:GetNewCreep(index, range)
+	if not index then return end
+	local minion = _enemyMinions.objects[index]
+	if ValidTarget(minion, range) then
+		local predictedDamage = self:GetPredictedDamage(minion)
+		local AADamage = getDmg("AD", minion, myHero) + myHero:CalcDamage(minion, self.ADDmg) + myHero:CalcMagicDamage(minion, self.APDmg) + self.TrueDmg
+		if minion.health > predictedDamage and AADamage + predictedDamage > minion.health then
+			return minion
+		end
+	end
+	if index < #_enemyMinions.objects then
+		return GetNewCreep(index + 1, range)
+	end
+	return nil
+end
+
+function iMinions:GetPredictedDamage(minion)
+	local predictedDamage = 0
+	for i, attack in ipairs(_incomingDamage) do
+		if not attack.target or not attack.source or attack.target.dead or attack.source.dead or GetDistanceSqr(attack.source, attack.origin) > 9 then
+			table.remove(_incomingDamage, i)
+		elseif minion.rawHash == attack.target.rawHash then
+			local myTimeToHit = GetDistance(enemy) / self.projSpeed + GetLatency() / 2 + (self.iOW and self.iOW.windUpTime or 500 / (myHero.attackSpeed * 0.625))
+			local minionTimeToHit = attack.delay + GetDistance(attack.source, minion) / attack.speed
+			if attack.started + minionTimeToHit < GetTickCount() then
+				table.remove(_incomingDamage, i)
+			elseif GetTickCount() + myTimeToHit > attack.started + minionTimeToHit then
+				predictedDamage = predictedDamage + attack.damage
+			end
+		end
+	end
+	return predictedDamage
+end
+
+function iMinions_AddProcSpell()
+	if not iMinions_OnProcessSpell then
+		function iMinions_OnProcessSpell(unit, spell)
+			if unit and (unit.type == "obj_AI_Minion" or unit.type == "obj_AI_Turret") and unit.team == myHero.team then
+				for _, minion in ipairs(_enemyMinions.objects) do
+					if ValidTarget(minion) and GetDistanceSqr(minion, spell.endPos) < 9 then
+						if _minionAttacks[unit.charName] or unit.type == "obj_AI_turret" then
+							_incomingDamage[unit.rawHash] = iMinions_getNewAttackDetails(unit, minion)
+						end
+					end
+				end
+			end
+		end
+		AddProcessSpellCallback(iMinions_OnProcessSpell)
+	end
+end
+
+function iMinions_getNewAttackDetails(source, target)
+	return  {
+		source = source,
+		target = target,
+		damage = getDmg("AD", target, source),
+		started = GetTickCount(),
+		origin = {x = source.x, z = source.z},
+		delay = source.type == "obj_AI_Turret" and minionAttacks.obj_AI_Turret.aaDelay or minionAttacks[source.charName].aaDelay,
+		speed = source.type == "obj_AI_Turret" and minionAttacks.obj_AI_Turret.projSpeed or minionAttacks[source.charName].projSpeed,
+		--sourceType = source.type,
+	}
+end
+
+--[[ To do:
+	
+	- Add spell support to iMinions
+	- Automatically add callbacks for iOrbwalker
+
+]]--
