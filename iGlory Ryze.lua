@@ -146,27 +146,27 @@ function OnLoad()
 		autoLevelSetFunction(onChoiceFunction)
 	end
 
-	Items:add("DFG", 3128)
-	Items:add("HXG", 3146)
-	Items:add("BWC", 3144)
-	Items:add("HYDRA", 3074)
-	Items:add("SHEEN", 3057)
-	Items:add("KITAES", 3186)
-	Items:add("TIAMAT", 3077)
-	Items:add("NTOOTH", 3115)
-	Items:add("SUNFIRE", 3068)
-	Items:add("WITSEND", 3091)
-	Items:add("TRINITY", 3078)
-	Items:add("STATIKK", 3087)
-	Items:add("ICEBORN", 3025)
-	Items:add("MURAMANA", 3042)
-	Items:add("LICHBANE", 3100)
-	Items:add("LIANDRYS", 3151)
-	Items:add("BLACKFIRE", 3188)
-	Items:add("HURRICANE", 3085)
-	Items:add("RUINEDKING", 3153)
-	Items:add("LIGHTBRINGER", 3185)
-	Items:add("SPIRITLIZARD", 3209)
+	Items:add("DFG", 3128, {})
+	Items:add("HXG", 3146, {})
+	Items:add("BWC", 3144, {})
+	Items:add("HYDRA", 3074, {})
+	Items:add("SHEEN", 3057, {})
+	Items:add("KITAES", 3186, {})
+	Items:add("TIAMAT", 3077, {})
+	Items:add("NTOOTH", 3115, {})
+	Items:add("SUNFIRE", 3068, {})
+	Items:add("WITSEND", 3091, {})
+	Items:add("TRINITY", 3078, {})
+	Items:add("STATIKK", 3087, {})
+	Items:add("ICEBORN", 3025, {})
+	Items:add("MURAMANA", 3042, {})
+	Items:add("LICHBANE", 3100, {})
+	Items:add("LIANDRYS", 3151, {})
+	Items:add("BLACKFIRE", 3188, {})
+	Items:add("HURRICANE", 3085, {})
+	Items:add("RUINEDKING", 3153, {})
+	Items:add("LIGHTBRINGER", 3185, {})
+	Items:add("SPIRITLIZARD", 3209, {})
 end
 
 function OnDraw()
@@ -253,9 +253,7 @@ end
 
 function BurstCombo()
 	if not ValidTarget(ts.target) then return end
-	if DFGREADY then CastSpellP(DFGSlot, ts.target) end
-	if HXGREADY then CastSpellP(HXGSlot, ts.target) end
-	if BWCREADY then CastSpellP(BWCSlot, ts.target) end
+	Items:Use("all", ts.target)
 
 	if myHero:CanUseSpell(SPELL_2) == READY and myHero:GetDistance(ts.target) > RyzeSettings.whunt then
 		doSpell(ts, SPELL_2, WRange)
@@ -274,9 +272,7 @@ end
 
 function LongCombo()
 	if not ValidTarget(ts.target) then return end
-	if DFGREADY then CastSpellP(DFGSlot, ts.target) end
-	if HXGREADY then CastSpellP(HXGSlot, ts.target) end
-	if BWCREADY then CastSpellP(BWCSlot, ts.target) end
+	Items:Use("all", ts.target)
 	if myHero:CanUseSpell(SPELL_1) == READY and myHero:GetDistance(ts.target) <= RyzeSettings.whunt then
 		doSpell(ts, SPELL_1, QRange)
 		qcasted = true
