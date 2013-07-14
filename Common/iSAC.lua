@@ -60,7 +60,7 @@ STAGE_WINDUP = 1
 STAGE_ORBWALK = 2
 STAGE_NONE = 3
 
-function iOrbWalker:__init(AARange, useDefaultValues addDelay)
+function iOrbWalker:__init(AARange, useDefaultValues, addDelay)
 	self.AARange = AARange or (myHero.range + GetDistance(myHero.minBBox))
 	self.addDelay = addDelay or 20
 	self.ShotCast = 0
@@ -1084,6 +1084,24 @@ function iMinions:SimpleLastHit(range)
 			if AADamage > minion.health then
 				myHero:Attack(minion)
 				return minion
+			end
+		end
+	end
+end
+
+function iMinions:Marker(range, radius, colour, thickness)
+	enemyMinions_update()
+	for _, minion in ipairs(_enemyMinions.objects) do
+		if ValidTarget(minion, range) then
+			local AADamage = getDmg("AD", minion, myHero) + myHero:CalcDamage(minion, self.ADDmg) + myHero:CalcMagicDamage(minion, self.APDmg) + self.TrueDmg
+			if AADamage > minion.health then
+				if thickness and thickness > 1 then
+					for i = 1, thickness do
+						DrawCircle(minion.x, minion.y, minion.z, radius+i, colour)
+					end
+				else
+					DrawCircle(minion.x, minion.y, minion.z, radius, colour)
+				end
 			end
 		end
 	end
