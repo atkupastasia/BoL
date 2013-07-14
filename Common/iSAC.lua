@@ -1055,7 +1055,7 @@ function iMinions:__init(range, iOW, projSpeed)
 	local range = range or 1000
 	enemyMinions_update(range)
 	self.range = range
-	self.projSpeed = projSpeed or (_customValues and _customValues.projSpeeds and _customValues.projSpeeds[myHero.charName].projSpeed) or math.huge
+	self.projSpeed = projSpeed or (_customValues and _customValues.projSpeeds and _customValues.projSpeeds[myHero.charName]) or math.huge
 	self.ADDmg, self.APDmg, self.TrueDmg = 0, 0, 0
 	self.iOW = iOW
 	iMinions_AddProcSpell()
