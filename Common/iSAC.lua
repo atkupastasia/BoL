@@ -1041,7 +1041,7 @@ function iCollision(endPos, width) -- Derp collision, altered a bit for own read
    return false
 end
 
---[[ iMinions Class - Rewritten ]]--
+--[[ iMinions Class - Rewritten - Credits to Sida, logic is taken from Sida's Auto Carry ]]--
 
 class 'iMinions'
 
