@@ -1080,7 +1080,7 @@ function iMinions:SimpleLastHit(range)
 	enemyMinions_update()
 	for _, minion in ipairs(_enemyMinions.objects) do
 		if ValidTarget(minion, range) then
-			local AADamage = getDmg("AD", minion, myHero) + myHero:CalcDamage(minion, self.ADDmg) + myHero:CalcMagicDamage(minion, self.APDmg) + self.TrueDmg
+			local AADamage = getDmg("AD", minion, myHero) + (self.ADDmg > 0 and myHero:CalcDamage(minion, self.ADDmg) or 0)+ (self.APDmg > 0 and myHero:CalcMagicDamage(minion, self.APDmg) or 0) + self.TrueDmg
 			if AADamage > minion.health then
 				myHero:Attack(minion)
 				return minion
@@ -1093,7 +1093,7 @@ function iMinions:Marker(range, radius, colour, thickness)
 	enemyMinions_update()
 	for _, minion in ipairs(_enemyMinions.objects) do
 		if ValidTarget(minion, range) then
-			local AADamage = getDmg("AD", minion, myHero) + myHero:CalcDamage(minion, self.ADDmg) + myHero:CalcMagicDamage(minion, self.APDmg) + self.TrueDmg
+			local AADamage = getDmg("AD", minion, myHero) + (self.ADDmg > 0 and myHero:CalcDamage(minion, self.ADDmg) or 0)+ (self.APDmg > 0 and myHero:CalcMagicDamage(minion, self.APDmg) or 0) + self.TrueDmg
 			if AADamage > minion.health then
 				if thickness and thickness > 1 then
 					for i = 1, thickness do
