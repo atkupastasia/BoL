@@ -60,6 +60,8 @@ STAGE_WINDUP = 1
 STAGE_ORBWALK = 2
 STAGE_NONE = 3
 
+local iOWInstances = {}
+
 function iOrbWalker:__init(AARange, useDefaultValues, addDelay)
 	self.AARange = AARange or (myHero.range + GetDistance(myHero.minBBox))
 	self.addDelay = addDelay or 20
@@ -69,6 +71,21 @@ function iOrbWalker:__init(AARange, useDefaultValues, addDelay)
 	if useDefaultValues then
 		self:addAA()
 		self:addReset()
+	end
+	iOWInstances[#iOWInstances+1] = self
+	if not iOW_OnProcessSpell then
+		function iOW_OnProcessSpell(unit, spell)
+			for _, iOWInstance in ipairs(iOWInstances) do
+				iOWInstance:OnProcessSpell(unit, spell)
+			end
+		end
+		function iOW_OnAnimation(unit, animation)
+			for _, iOWInstance in ipairs(iOWInstances) do
+				iOWInstance:OnAnimation(unit, animation)
+			end
+		end
+		AddProcessSpellCallback(iOW_OnProcessSpell)
+		AddAnimationCallback(iOW_OnAnimation)
 	end
 end
 
