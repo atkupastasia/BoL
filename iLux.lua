@@ -408,12 +408,21 @@ end
 function Poke()
 	if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
 		if not EParticle then
-			local _,_,tempEPos = tpE:GetPrediction(ts.target)
-			local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
-			if EPos then
-				CastSpell(_E, EPos.x, EPos.z)
-				TriggerEOnLand = true
-				TriggerEOnLandFarm = false
+			if VIP_USER then
+				local _,_,tempEPos = tpE:GetPrediction(ts.target)
+				local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
+				if EPos then
+					CastSpell(_E, EPos.x, EPos.z)
+					TriggerEOnLand = true
+					TriggerEOnLandFarm = false
+				end
+			else
+				local EPos = GetEPrediction(ts.target)
+				if EPos then
+					CastSpell(_E, EPos.x, EPos.z)
+					TriggerEOnLand = true
+					TriggerEOnLandFarm = false
+				end
 			end
 		elseif GetDistance(EParticle, ts.target) < ERadius then
 			CastSpell(_E)
