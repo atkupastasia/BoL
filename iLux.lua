@@ -161,7 +161,7 @@ function OnTick()
 		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) then
 			myHero:MoveTo(mousePos.x, mousePos.z)
 		end
-		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or iLuxConfig.AutoTriggerE) then
+		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or iLuxConfig.AutoTriggerE or iLuxConfig.pewpew) then
 			AutoTriggerE()
 		end
 		if iLuxConfig.autoFarm and not (iLuxConfig.pewpew or iLuxConfig.harass) then autoFarm() end
@@ -180,7 +180,7 @@ function OnCreateObj(object)
 end
 
 function OnDeleteObj(object)
-	if object.name:find("LuxLightstrike_tar") or (EParticle and EParticle.rawHash == object.rawHash) then
+	if object.name:find("LuxBlitz_nova") or (EParticle and EParticle.rawHash == object.rawHash) then
 		EParticle = nil
 		TriggerEOnLand = false
 		TriggerEOnLandFarm = false
@@ -199,12 +199,16 @@ function OnDraw()
 			DrawCircle(myHero.x, myHero.y, myHero.z, RRange, 0xFF80FF00)
 		end
 
+		if EParticle then
+			DrawCircle(EParticle.x, EParticle.y, EParticle.z, ERadius, 0xFF80FF00)
+		end
+
 		if drawPrediction then
 			if myHero:CanUseSpell(_Q) == READY and ValidTarget(ts.target) and GetQPrediction(ts.target) ~= nil then
 				tpQCollision:DrawCollision(myHero, GetQPrediction(ts.target))
 			end
 	
-			if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
+			if VIP_USER and myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
 				local _,_,tempEPos = tpE:GetPrediction(ts.target)
 				local EPos = tpE:GetHitChance(ts.target) > minHitChance and tempEPos or nil
 				if EPos then
