@@ -4,7 +4,7 @@
 ######Note: These scripts are optimised for VIP users, I cannot guarantee they will work for free users. Please download the appropriate libs. More advanced configuration can often be found inside the script, indicated with --[[ Config ]]--.
 
 ###Current Scripts:
-- ####iSAC - Base lib for champion scripts
+- ####[iSAC - Base lib for champion scripts] (http://botoflegends.com/forum/topic/5018-library-isac/)
 > ###### Requires [Klokje's Collision Lib] (http://botoflegends.com/forum/topic/4317-libraryvip-collision/)
 > ###### Features
 > - Offers a great base for both beginner and experienced scripters to create scripts on.
