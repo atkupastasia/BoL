@@ -33,7 +33,7 @@
 
 if myHero.charName ~= "Lux" then return end
 
-require "Collision"
+if VIP_USER then require "Collision" end
 
 --[[ Config ]]--
 
@@ -44,7 +44,7 @@ local HK4 = string.byte("X") -- Derp, not used but still here.
 local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
 local damageSafetyNet = 2 --%
-local minHitChance = 0.3
+local minHitChance = 0.3 -- VIP Users only.
 local drawPrediction = false
 local OnlyEWhenQNotReadyAndTargetCanMove = false
 local minMinionsForEFarm = 2
@@ -64,11 +64,10 @@ local defaultItemRange = 700
 --[[ Script Variables ]]--
 
 local ts = TargetSelector(TARGET_LESS_CAST,QRange,DAMAGE_MAGIC,false)
-local tpQ = TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth)
-local tpQCollision = Collision(QRange, QSpeed, QDelay, QWidth)
-local tpE = TargetPredictionVIP(ERange, ESpeed, EDelay, ERadius*2)
-local tpR = TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth)
-local tpRHealth = TargetPrediction(RRange, RSpeed, RDelay*1000, RWidth)
+local tpQ = VIP_USER and TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth) or TargetPrediction(QRange, QSpeed/1000, QDelay*1000, QWidth)
+local tpQCollision = VIP_USER and Collision(QRange, QSpeed, QDelay, QWidth) or nil
+local tpE = VIP_USER and TargetPredictionVIP(ERange, ESpeed, EDelay, ERadius*2) or TargetPrediction(ERange, ESpeed/1000, EDelay*1000, EWidth*2)
+local tpR = VIP_USER and TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth) or TargetPrediction(RRange, RSpeed/1000, RDelay*1000, RWidth)
 
 local igniteSlot = nil
 local EParticle = nil
@@ -153,7 +152,7 @@ function OnTick()
 	ts:update()
 	enemyMinions:update()
 	updateItems()
-	if EParticle ~= nil and not EParticle.valid then EParticle = nil end
+	--if EParticle ~= nil and not EParticle.valid then EParticle = nil end
 
 	if not myHero.dead then
 		AutoIgnite()
@@ -162,7 +161,7 @@ function OnTick()
 		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) then
 			myHero:MoveTo(mousePos.x, mousePos.z)
 		end
-		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or (iLuxConfig.AutoTriggerE and not iLuxConfig.pewpew)) then
+		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or iLuxConfig.AutoTriggerE) then
 			AutoTriggerE()
 		end
 		if iLuxConfig.autoFarm and not (iLuxConfig.pewpew or iLuxConfig.harass) then autoFarm() end
@@ -518,8 +517,7 @@ function StealTzeBuffs()
 			if jungleMob and jungleMob.isCamp then
 				local tempMob = jungleMob.object
 				if tempMob ~= nil and tempMob.valid and tempMob.visible and not tempMob.dead and GetDistance(tempMob) < RRange then
-					local _,_,nextHealth = tpRHealth:GetPrediction(tempMob)
-					if getDmg("R", tempMob, myHero) * 0.9 >  nextHealth then
+					if getDmg("R", tempMob, myHero) >  tempMob.health then
 						CastSpell(_R, tempMob.x, tempMob.z)
 					end
 				end
@@ -531,8 +529,7 @@ end
 function AutoIgnite()
 	if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then
 		for i, enemy in ipairs(GetEnemyHeroes()) do
-			local igniteDmg = getDmg("IGNITE", enemy, myHero)
-			if ValidTarget(enemy, igniteRange) and enemy.health < igniteDmg then
+			if ValidTarget(enemy, igniteRange) and enemy.health < getDmg("IGNITE", enemy, myHero) then
 				CastSpell(igniteSlot, enemy)
 			end
 		end
@@ -541,27 +538,39 @@ end
 
 --[[ Prediction and Calculations ]]--
 
-function GetQPrediction(enemy)
-	if minHitChance ~= 0 and tpQ:GetHitChance(enemy) < minHitChance then return nil end
-	local _,_,QPos = tpQ:GetPrediction(enemy)
-	local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
-	if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
-		return QPos
+function GetQPrediction(enemy) 
+	if VIP_USER then
+		if minHitChance ~= 0 and tpQ:GetHitChance(enemy) < minHitChance then return nil end
+		local _,_,QPos = tpQ:GetPrediction(enemy)
+		local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
+		if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
+			return QPos
+		else
+			return nil
+		end
 	else
-		return nil
+		return tpQ:GetPrediction(enemy)
 	end
 end
 
 function GetEPrediction(enemy)
-	if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
-	local _,_,EPos = tpE:GetPrediction(enemy)
-	return EPos
+	if VIP_USER then
+		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
+		local _,_,EPos = tpE:GetPrediction(enemy)
+		return EPos
+	else
+		return tpE:GetPrediction(enemy)
+	end
 end
 
 function GetRPrediction(enemy)
-	if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
-	local _,_,RPos = tpR:GetPrediction(enemy)
-	return RPos
+	if VIP_USER then
+		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
+		local _,_,RPos = tpR:GetPrediction(enemy)
+		return RPos
+	else
+		return tpR:GetPrediction(enemy)
+	end
 end
 
 function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
