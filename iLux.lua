@@ -67,7 +67,7 @@ local ts = TargetSelector(TARGET_LESS_CAST,QRange,DAMAGE_MAGIC,false)
 local tpQ = VIP_USER and TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth) or TargetPrediction(QRange, QSpeed/1000, QDelay*1000, QWidth)
 local tpQCollision = VIP_USER and Collision(QRange, QSpeed, QDelay, QWidth) or nil
 local tpE = VIP_USER and TargetPredictionVIP(ERange, ESpeed, EDelay, ERadius*2) or TargetPrediction(ERange, ESpeed/1000, EDelay*1000, ERadius*2)
-local tpR = VIP_USER and TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth) or TargetPrediction(RRange, RSpeed/1000, RDelay*1000, RWidth)
+local tpR = VIP_USER and TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth) or TargetPrediction(RRange, 100, RDelay*1000, RWidth)
 
 local igniteSlot = nil
 local EParticle = nil
@@ -180,7 +180,7 @@ function OnCreateObj(object)
 end
 
 function OnDeleteObj(object)
-	if object.name:find("LuxBlitz_nova") or (EParticle and EParticle.rawHash == object.rawHash) then
+	if object.name:find("LuxBlitz_nova") then
 		EParticle = nil
 		TriggerEOnLand = false
 		TriggerEOnLandFarm = false
