@@ -138,7 +138,7 @@ function OnLoad()
 	RyzeConfig:addTS(ts)
 
 	ASLoadMinions()
-	enemyMinions = minionManager(MINION_ENEMY, QRange, player, MINION_SORT_HEALTH_ASC)
+	--enemyMinions = minionManager(MINION_ENEMY, QRange, player, MINION_SORT_HEALTH_ASC)
 
 	for i=1, heroManager.iCount do waittxt[i] = i*3 end
 	if levelSequence then
@@ -146,27 +146,27 @@ function OnLoad()
 		autoLevelSetFunction(onChoiceFunction)
 	end
 
-	Items:add("DFG", 3128, {})
-	Items:add("HXG", 3146, {})
-	Items:add("BWC", 3144, {})
-	Items:add("HYDRA", 3074, {})
-	Items:add("SHEEN", 3057, {})
-	Items:add("KITAES", 3186, {})
-	Items:add("TIAMAT", 3077, {})
-	Items:add("NTOOTH", 3115, {})
-	Items:add("SUNFIRE", 3068, {})
-	Items:add("WITSEND", 3091, {})
-	Items:add("TRINITY", 3078, {})
-	Items:add("STATIKK", 3087, {})
-	Items:add("ICEBORN", 3025, {})
-	Items:add("MURAMANA", 3042, {})
-	Items:add("LICHBANE", 3100, {})
-	Items:add("LIANDRYS", 3151, {})
-	Items:add("BLACKFIRE", 3188, {})
-	Items:add("HURRICANE", 3085, {})
-	Items:add("RUINEDKING", 3153, {})
-	Items:add("LIGHTBRINGER", 3185, {})
-	Items:add("SPIRITLIZARD", 3209, {})
+	Items:add("DFG", 3128)
+	Items:add("HXG", 3146)
+	Items:add("BWC", 3144)
+	Items:add("HYDRA", 3074)
+	Items:add("SHEEN", 3057)
+	Items:add("KITAES", 3186)
+	Items:add("TIAMAT", 3077)
+	Items:add("NTOOTH", 3115)
+	Items:add("SUNFIRE", 3068)
+	Items:add("WITSEND", 3091)
+	Items:add("TRINITY", 3078)
+	Items:add("STATIKK", 3087)
+	Items:add("ICEBORN", 3025)
+	Items:add("MURAMANA", 3042)
+	Items:add("LICHBANE", 3100)
+	Items:add("LIANDRYS", 3151)
+	Items:add("BLACKFIRE", 3188)
+	Items:add("HURRICANE", 3085)
+	Items:add("RUINEDKING", 3153)
+	Items:add("LIGHTBRINGER", 3185)
+	Items:add("SPIRITLIZARD", 3209)
 end
 
 function OnDraw()
@@ -178,7 +178,8 @@ function OnDraw()
 		if ValidTarget(ts.target) then DrawCircle(ts.target.x, ts.target.y, ts.target.z, 100, 0xFF80FF00) end
 		if RyzeConfig.LongActive then DrawCircle(myHero.x, myHero.y, myHero.z, RyzeSettings.wflee, 0xFFFF0000) end
 
-		for _, enemydraw in ipairs(GetEnemyHeroes()) do
+		for i, enemydraw in ipairs(GetEnemyHeroes()) do
+			if not waittxt[i] then waittxt[i] = 30 end
 			if killable[i] == 1 then
 					DrawCircle(enemydraw.x, enemydraw.y, enemydraw.z, 80, 0x0000FF)
 			elseif killable[i] == 2 then
@@ -204,7 +205,7 @@ end
 
 function OnTick()
 	ts:update()
-	enemyMinions:update()
+	--enemyMinions:update()
 	iSum:AutoIgnite()
 	Items:update()
 	RyzeDmg()
@@ -238,14 +239,14 @@ function OnProcessSpell(unit, spell)
 end
 
 function OnCreateObj(object)
-	if object and object.type == "obj_AI_Minion" and obj.name and jungleCamps[object.name] then
+	if object and object.type == "obj_AI_Minion" and object.name and jungleCamps[object.name] then
 		jungleCamps[object.name].object = object
 	end
 end
 
 --[[ Combat Functions ]]--
 
-function doSpell(spell, range)
+function doSpell(derp, spell, range)
 	if ts.target ~= nil and myHero:CanUseSpell(spell) == READY and GetDistance(ts.target) <= range then
 		CastSpellP(spell, ts.target)
 	end
@@ -255,17 +256,17 @@ function BurstCombo()
 	if not ValidTarget(ts.target) then return end
 	Items:Use("all", ts.target)
 
-	if myHero:CanUseSpell(SPELL_2) == READY and myHero:GetDistance(ts.target) > RyzeSettings.whunt then
+	if myHero:CanUseSpell(_W) == READY and myHero:GetDistance(ts.target) > RyzeSettings.whunt then
 		doSpell(ts, SPELL_2, WRange)
-	elseif myHero:CanUseSpell(SPELL_1) == READY and myHero:GetDistance(ts.target) <= RyzeSettings.whunt then
+	elseif myHero:CanUseSpell(_Q) == READY and myHero:GetDistance(ts.target) <= RyzeSettings.whunt then
 		doSpell(ts, SPELL_1, QRange)
-	elseif myHero:CanUseSpell(SPELL_1) == READY then
+	elseif myHero:CanUseSpell(_Q) == READY then
 		doSpell(ts, SPELL_1, QRange)
-	elseif RyzeConfig.useUlti and myHero:CanUseSpell(SPELL_4) == READY then
-		CastSpellP(SPELL_4)
-	elseif myHero:CanUseSpell(SPELL_3) == READY then
+	elseif RyzeConfig.useUlti and myHero:CanUseSpell(_R) == READY then
+		CastSpellP(_R)
+	elseif myHero:CanUseSpell(_E) == READY then
 		doSpell(ts, SPELL_3, ERange)
-	elseif myHero:CanUseSpell(SPELL_2) == READY then
+	elseif myHero:CanUseSpell(_W) == READY then
 		doSpell(ts, SPELL_2, WRange)
 	end
 end
@@ -273,47 +274,47 @@ end
 function LongCombo()
 	if not ValidTarget(ts.target) then return end
 	Items:Use("all", ts.target)
-	if myHero:CanUseSpell(SPELL_1) == READY and myHero:GetDistance(ts.target) <= RyzeSettings.whunt then
+	if myHero:CanUseSpell(_Q) == READY and myHero:GetDistance(ts.target) <= RyzeSettings.whunt then
 		doSpell(ts, SPELL_1, QRange)
 		qcasted = true
-		if RyzeConfig.useUlti and myHero:CanUseSpell(SPELL_4) == READY and qcasted == true and myHero:CanUseSpell(SPELL_1) == COOLDOWN then
-			CastSpellP(SPELL_4)
+		if RyzeConfig.useUlti and myHero:CanUseSpell(_R) == READY and qcasted == true and myHero:CanUseSpell(_Q) == COOLDOWN then
+			CastSpellP(_R)
 			qcasted = false
 		end
-	elseif myHero:CanUseSpell(SPELL_2) == READY and myHero:GetDistance(ts.target) > RyzeSettings.whunt then
+	elseif myHero:CanUseSpell(_W) == READY and myHero:GetDistance(ts.target) > RyzeSettings.whunt then
 		doSpell(ts, SPELL_2, WRange)
 		qcasted = false
-		if myHero:CanUseSpell(SPELL_1) == READY then
+		if myHero:CanUseSpell(_Q) == READY then
 			doSpell(ts, SPELL_1, QRange)
 			qcasted = true
 		end
-	elseif myHero:CanUseSpell(SPELL_1) == READY then
+	elseif myHero:CanUseSpell(_Q) == READY then
 		doSpell(ts, SPELL_1, QRange)
 		qcasted = true
-	elseif RyzeConfig.useUlti and myHero:CanUseSpell(SPELL_4) == READY and qcasted == true and myHero:CanUseSpell(SPELL_1) == COOLDOWN then
-		CastSpellP(SPELL_4)
+	elseif RyzeConfig.useUlti and myHero:CanUseSpell(_R) == READY and qcasted == true and myHero:CanUseSpell(_Q) == COOLDOWN then
+		CastSpellP(_R)
 		qcasted = false
-	elseif myHero:CanUseSpell(SPELL_2) == READY and ((qcasted == true and myHero:CanUseSpell(SPELL_1) == COOLDOWN and myHero:GetDistance(ts.target) >= RyzeSettings.wflee) or (RyzeSettings.winsta == true and myHero:GetDistance(ts.target) >= RyzeSettings.wflee)) then
+	elseif myHero:CanUseSpell(_W) == READY and ((qcasted == true and myHero:CanUseSpell(_Q) == COOLDOWN and myHero:GetDistance(ts.target) >= RyzeSettings.wflee) or (RyzeSettings.winsta == true and myHero:GetDistance(ts.target) >= RyzeSettings.wflee)) then
 		doSpell(ts, SPELL_2, WRange)
 		qcasted = false
-	elseif myHero:CanUseSpell(SPELL_3) == READY and qcasted == true and myHero:CanUseSpell(SPELL_1) == COOLDOWN then
+	elseif myHero:CanUseSpell(_E) == READY and qcasted == true and myHero:CanUseSpell(_Q) == COOLDOWN then
 		doSpell(ts, SPELL_3, WRange)
 		qcasted = false
-	elseif myHero:CanUseSpell(SPELL_2) == READY and qcasted == true and myHero:CanUseSpell(SPELL_1) == COOLDOWN then
+	elseif myHero:CanUseSpell(_W) == READY and qcasted == true and myHero:CanUseSpell(_Q) == COOLDOWN then
 		doSpell(ts, SPELL_2, WRange)
 		qcasted = false
 	end
 end
 
 function PowerFarm()
-	if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, enemyMinions.objects[1]) end
-	for _, minion in ipairs(enemyMinions.objects) do
+	if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, getEnemyMinions()[1]) end
+	for _, minion in ipairs(getEnemyMinions()) do
 		if ValidTarget(minion) then
-			if myHero:CanUseSpell(SPELL_1) == READY and minion.health < getDmg("Q", minion, myHero) then
+			if myHero:CanUseSpell(_Q) == READY and minion.health < getDmg("Q", minion, myHero) then
 				CastSpellP(SPELL_1, minion)
-			elseif myHero:CanUseSpell(SPELL_2) == READY and minion.health < getDmg("W", minion, myHero) then
+			elseif myHero:CanUseSpell(_W) == READY and minion.health < getDmg("W", minion, myHero) then
 				CastSpellP(SPELL_2, minion)
-			elseif myHero:CanUseSpell(SPELL_3) == READY and minion.health < getDmg("E", minion, myHero) then
+			elseif myHero:CanUseSpell(_E) == READY and minion.health < getDmg("E", minion, myHero) then
 				CastSpellP(SPELL_3, minion)
 			end
 		end
@@ -324,9 +325,9 @@ function JungleClear()
 	local MonsterTarget = GetMonsterTarget()
 	if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, MonsterTarget) end
 	if ValidTarget(MonsterTarget) then
-		if myHero:CanUseSpell(SPELL_1) == READY then CastSpellP(SPELL_1, MonsterTarget) end
-		if myHero:CanUseSpell(SPELL_2) == READY then CastSpellP(SPELL_2, MonsterTarget) end
-		if myHero:CanUseSpell(SPELL_3) == READY then CastSpellP(SPELL_3, MonsterTarget) end
+		if myHero:CanUseSpell(_Q) == READY then CastSpellP(SPELL_1, MonsterTarget) end
+		if myHero:CanUseSpell(_W) == READY then CastSpellP(SPELL_2, MonsterTarget) end
+		if myHero:CanUseSpell(_E) == READY then CastSpellP(SPELL_3, MonsterTarget) end
 	end
 end
 
@@ -358,10 +359,10 @@ function RyzeDmg()
 			end
 			local combo1 = qdamage + qdamage + wdamage + edamage + itemDamage
 			local combo2 = itemDamage
-			if myHero:CanUseSpell(SPELL_1) == READY then combo2 = qdamage + combo2 end
-			if myHero:CanUseSpell(SPELL_3) == READY then combo2 = edamage + combo2 end
-			if myHero:CanUseSpell(SPELL_2) then combo2 = wdamage + combo2 end
-			if myHero:CanUseSpell(SPELL_1) and myHero:CanUseSpell(SPELL_3) and myHero:CanUseSpell(SPELL_2) == READY then combo2 = qdamage + combo2 end
+			if myHero:CanUseSpell(_Q) == READY then combo2 = qdamage + combo2 end
+			if myHero:CanUseSpell(_E) == READY then combo2 = edamage + combo2 end
+			if myHero:CanUseSpell(_W) then combo2 = wdamage + combo2 end
+			if myHero:CanUseSpell(_Q) and myHero:CanUseSpell(_E) and myHero:CanUseSpell(_W) == READY then combo2 = qdamage + combo2 end
 			if Items:Ready("DFG") then
 				combo1 = combo1 * 1.2
 				combo2 = combo2 * 1.2
@@ -385,7 +386,7 @@ end
 function ASLoadMinions()
 	for i = 1, objManager.maxObjects do
 		local object = objManager:getObject(i)
-		if object and object.type == "obj_AI_Minion" and obj.name and jungleCamps[object.name] then
+		if object and object.type == "obj_AI_Minion" and object.name and jungleCamps[object.name] then
 			jungleCamps[object.name].object = object
 		end
 	end
@@ -401,7 +402,7 @@ function GetMonsterTarget()
 end
 
 function onChoiceFunction()
-	if player:GetSpellData(SPELL_1).level < player:GetSpellData(SPELL_2).level then
+	if player:GetSpellData(_Q).level < player:GetSpellData(_W).level then
 		return 1
 	else
 		return 2
