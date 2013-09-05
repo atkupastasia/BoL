@@ -152,7 +152,7 @@ function OnTick()
 	ts:update()
 	enemyMinions:update()
 	updateItems()
-	--if EParticle ~= nil and not EParticle.valid then EParticle = nil end
+	if EParticle ~= nil and not EParticle.valid then EParticle = nil end
 
 	if not myHero.dead then
 		AutoIgnite()
@@ -174,6 +174,10 @@ end
 function OnCreateObj(object)
 	if object.name:find("LuxLightstrike_tar") then
 		EParticle = object
+	elseif object.name:find("LuxBlitz_nova") then
+		EParticle = nil
+		TriggerEOnLand = false
+		TriggerEOnLandFarm = false
 	elseif jungleObjects[object.name] and jungleObjects[object.name].isCamp then
 		jungleObjects[object.name].object = object
 	end
