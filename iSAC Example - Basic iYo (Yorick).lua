@@ -19,7 +19,7 @@ local WSpell = iCaster(_W, 600, SPELL_CIRCLE, math.huge, 0.250, 200)
 local ESpell = iCaster(_E, 550, SPELL_TARGETED)
 local RSpell = iCaster(_R, 850, SPELL_TARGETED_FRIENDLY)
 local Summoners = iSummoners()
-local Minions = iMinions(1000)
+local Minions = iMinions(1000, Orbwalker)
 
 --[[ Core ]]--
 
