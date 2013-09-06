@@ -18,7 +18,7 @@ local LeapW = false
 
 local QRange = 650
 local WRange, WSpeed, WDelay, WWidth = 950, 1000, 0.250, 100
-local ERange, ESpeed, EDelay, EWidth = 1050, 1300, 0.500, 70
+local ERange, ESpeed, EDelay, EWidth = 1050, 1300, 0.250, 70
 
 local SpiderRange = 550
 
@@ -91,6 +91,7 @@ function OnLoad()
 	iLiseConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
 	iLiseConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK3)
 	iLiseConfig:addParam("jungleFarm", "Munching Jungle", SCRIPT_PARAM_ONKEYDOWN, false, HK3)
+	iLiseConfig:addParam("autoKS", "Auto Q KS", SCRIPT_PARAM_ONOFF, true)
 	iLiseConfig:addParam("Orbwalk", "Orbwalk", SCRIPT_PARAM_ONOFF, true)
 
 	iLiseConfig:permaShow("pewpew")
@@ -140,6 +141,7 @@ function OnTick()
 
 	if not myHero.dead then
 		iSum:AutoIgnite()
+		if iLiseConfig.autoKS then AutoKS() end
 		if iLiseConfig.pewpew then PewPew() if iLiseConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) end end
 		if iLiseConfig.harass then Poke() end
 		if iLiseConfig.jungleFarm then JungleFarm() end
@@ -218,6 +220,18 @@ function PewPew()
 				CastSpell(_W)
 			elseif myHero:CanUseSpell(_R) == READY and iLiseSpellConfig.switchToHuman and not TargetHaveBuff("EliseSpiderW", myHero) then
 				CastSpell(_R)
+			end
+		end
+	end
+end
+
+function AutoKS()
+	for _, enemy in ipairs(GetEnemyHeroes()) do
+		if ValidTarget(enemy) then
+			if Humanform and GetDistance(enemy) < QRange and getDmg("Q", enemy, myHero) > enemy.health then
+				CastSpell(_Q, enemy)
+			elseif not Humanform and GetDistance(enemy) < SpiderRange and getDmg("QM", enemy, myHero) > enemy.health then
+				CastSpell(_Q, enemy)
 			end
 		end
 	end
