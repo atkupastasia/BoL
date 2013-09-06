@@ -117,6 +117,7 @@ function OnLoad()
 	RyzeConfig:addParam("useMura", "Auto Muramana", SCRIPT_PARAM_ONOFF, true)
 	RyzeConfig:addParam("PowerFarm", "Power Farm", SCRIPT_PARAM_ONKEYTOGGLE, false, 73)
 	RyzeConfig:addParam("Orbwalk", "Orbwalk", SCRIPT_PARAM_ONOFF, true)
+	RyzeConfig:addParam("MoveToMouse", "Move To Mouse", SCRIPT_PARAM_ONOFF, true)
 	RyzeConfig:addParam("Quotes", "Show Cheesy Ryze Quotes", SCRIPT_PARAM_ONOFF, true)
 
 	RyzeSettings:addParam("minMuraMana", "Min Mana Muramana", SCRIPT_PARAM_SLICE, 25, 0, 100, 2)
@@ -214,14 +215,14 @@ function OnTick()
 	if not myHero.dead then
 		if RyzeConfig.useMura then MuramanaToggle(1000, ((player.mana / player.maxMana) > (RyzeSettings.minMuraMana / 100))) end
 		if RyzeConfig.BurstActive then
-			if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) end
+			if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) elseif RyzeConfig.MoveToMouse then myHero:MoveTo(mousePos.x, mousePos.z) end
 			if math.abs(myHero.cdr*100) >= RyzeSettings.minCDRnew and RyzeSettings.ComboSwitch then
 				LongCombo()
 			else
 				BurstCombo()
 			end
 		elseif RyzeConfig.LongActive then
-			if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) end
+			if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) elseif RyzeConfig.MoveToMouse then myHero:MoveTo(mousePos.x, mousePos.z) end
 			LongCombo()
 		elseif RyzeConfig.JungleActive then
 			JungleClear()

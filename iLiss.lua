@@ -59,7 +59,7 @@ local items = {
 }	
 
 function OnLoad()
-	iLissConfig = scriptConfig("iLiss v0.1.1", "iLiss")
+	iLissConfig = scriptConfig("iLiss", "iLiss")
 
 	iLissConfig:addParam("pewpew","PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
 	iLissConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK2)

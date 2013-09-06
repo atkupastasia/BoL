@@ -26,6 +26,7 @@ local RDelay = 0.500
 local RWidth = 80
 
 local igniteRange = 600
+local defaultItemRange = 500
 
 --[[ Script Variables ]]--
 
@@ -35,6 +36,7 @@ local tpR = TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth)
 
 local igniteSlot = nil
 local enemyMinions = {}
+local updateTextTimers = {}
 
 local items = {
 	itemsList = {
@@ -98,7 +100,8 @@ end
 --[[ Combat Functions ]]--
 
 function PewPew()
-	if not validTarget(ts.target, QRange) then return end
+	if not ValidTarget(ts.target, QRange) then return end
+	UseItems(ts.target)
 	local EPos = myHero:CanUseSpell(_E) == READY and GetEPrediction(ts.target)
 	local RPos = myHero:CanUseSpell(_R) == READY and GetRPrediction(ts.target)
 	local calcDmg = calculateDamage(ts.target, true, true)

@@ -16,7 +16,7 @@ local minHitChance = 0.3
 
 local QRange, QSpeed, QDelay, QRadius = 825, math.huge, 0.500, 85
 local WRange, WSpeed, WDelay, WRadius = 825, math.huge, 0.2432, 10
-local ERange, ESpeed, EDelay, EWidth = 1100, 1150, 0.500, 140
+local ERange, ESpeed, EDelay, EWidth = 1100, 1150, 0.250, 140
 local RRange, RSpeed, RDelay, RRadius = 700, math.huge, 0.500, 500
 local PRange, PSpeed, PDelay, PWidth = 1400, 1850, 0.500, 50
 
@@ -119,17 +119,6 @@ function OnProcessSpell(unit, spell)
 							CastSpell(_W, intersection.x, intersection.y)
 							CastSpell(_W, intersection.x, intersection.y)
 						end
-						--for _, intersectionPoint in ipairs(intersection) do
-						--	if GetDistance(intersectionPoint) < QRange and intersectionPoint.z then
-						--		if myHero:CanUseSpell(_Q) == READY then
-						--			CastSpell(_Q, intersectionPoint.x, intersectionPoint.z)
-						--		end
-						--		if myHero:CanUseSpell(_W) == READY then
-						--			CastSpell(_W, intersectionPoint.x, intersectionPoint.z)
-						--			CastSpell(_W, intersectionPoint.x, intersectionPoint.z)
-						--		end
-						--	end
-						--end
 					elseif myHero:CanUseSpell(_W) == READY then
 						Packet("S_CAST", {spellId = _W, fromX = spell.endPos.x, fromY = spell.endPos.z, toX = spell.endPos.x, toY = spell.endPos.z}):send()
 						Packet("S_CAST", {spellId = _W, fromX = spell.endPos.x, fromY = spell.endPos.z, toX = spell.endPos.x, toY = spell.endPos.z}):send()
@@ -164,7 +153,7 @@ function PewPew()
 		end
 	end
 	if myHero:CanUseSpell(_Q) ~= READY and myHero:CanUseSpell(_E) ~= READY and myHero:CanUseSpell(_R) == READY then
-		finishUlt()
+		--finishUlt()
 	end
 	if iZyraConfig.ultOnFive and myHero:CanUseSpell(_R) == READY then
 		ultOnFive()

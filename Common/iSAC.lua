@@ -20,7 +20,6 @@ local _customValues = assert(loadfile(LIB_PATH.."iSAC - Custom Values.lua"))()
 		local Orbwalker = iOrbWalker(AARange)
 
 	Functions:
-		OrbWalker:OnProcessSpell(unit, spell)	-> Update iOrbWalker, put in OnProcessSpell
 		OrbWalker:addAA([AAName])				-> Add autoattack spellname to iOrbWalker, uses most common logic if omitted or equals "attack"
 		OrbWalker:addReset(resetName) 			-> Add spellname with AA-timer reset.
 		OrbWalker:removeAA(AAName)				-> Removes an autoattack from the list or adds the autoattack to the list of ignored attacks.
@@ -68,6 +67,7 @@ function iOrbWalker:__init(AARange, useDefaultValues, addDelay)
 	self.ShotCast = 0
 	self.NextShot = 0
 	self.windUpTime = 0
+	self.animationTime = 0
 	if useDefaultValues then
 		self:addAA()
 		self:addReset()
@@ -397,6 +397,10 @@ end
 
 function iCaster:__type()
 	return "iCaster"
+end
+
+function iCaster:Data()
+	return myHero:GetSpellData(self.spell)
 end
 
 function iCaster:Cast(target, minHitChance)
@@ -1074,7 +1078,7 @@ function iMinions:__init(range, iOW, projSpeed)
 	self.range = range
 	self.projSpeed = projSpeed or (_customValues and _customValues.projSpeeds and _customValues.projSpeeds[myHero.charName]) or math.huge
 	self.ADDmg, self.APDmg, self.TrueDmg = 0, 0, 0
-	self.iOW = iOW
+	self.iOW = iOW or iOrbWalker(myHero.range)
 	iMinions_AddProcSpell()
 end
 
@@ -1124,13 +1128,13 @@ function iMinions:Marker(range, radius, colour, thickness)
 	end
 end
 
-function iMinions:LastHit(range, movePos)
-	assert(range == nil or type(range) == "number", "Error: iMinions:LastHit(Orbwalker, range, movePos), <number> or nil expected for range.")
-	assert(movePos == nil or (movePos.x and movePos.z), "Error: iMinions:LastHit(Orbwalker, range, movePos), invalid movePos.")
+function iMinions:LastHit(range, movePos, iOW)
+	assert(range == nil or type(range) == "number", "Error: iMinions:LastHit(range, movePos), <number> or nil expected for range.")
+	assert(movePos == nil or (movePos.x and movePos.z), "Error: iMinions:LastHit(range, movePos), invalid movePos.")
 	--assert(Orbwalker and Orbwalker:__type() == "iOrbWalker", "Error: iMinions:LastHit(Orbwalker, range, movePos), invalid Orbwalker.")
 	enemyMinions_update()
-	if not ValidTarget(self.target) then self.target = iMinions:GetNewCreep(1, range) end
-	if movePos then self.iOW:Orbwalk(movePos, self.target) else self.iOW:Attack(self.target) end
+	if not ValidTarget(self.target) then self.target = self:GetNewCreep(1, range) end
+	if movePos then iOW:Orbwalk(movePos, self.target) else iOW:Attack(self.target) end
 end
 
 function iMinions:GetNewCreep(index, range)
@@ -1144,7 +1148,7 @@ function iMinions:GetNewCreep(index, range)
 		end
 	end
 	if index < #_enemyMinions.objects then
-		return GetNewCreep(index + 1, range)
+		return self:GetNewCreep(index + 1, range)
 	end
 	return nil
 end
@@ -1154,8 +1158,8 @@ function iMinions:GetPredictedDamage(minion)
 	for i, attack in ipairs(_incomingDamage) do
 		if not attack.target or not attack.source or attack.target.dead or attack.source.dead or GetDistanceSqr(attack.source, attack.origin) > 9 then
 			table.remove(_incomingDamage, i)
-		elseif minion.rawHash == attack.target.rawHash then
-			local myTimeToHit = GetDistance(enemy) / self.projSpeed + GetLatency() / 2 + (self.iOW and self.iOW.windUpTime or 500 / (myHero.attackSpeed * 0.625))
+		elseif minion.networkID == attack.target.networkID then
+			local myTimeToHit = (self.projSpeed < math.huge and GetDistance(minion) / self.projSpeed or 0) + GetLatency() / 2 + (self.iOW and self.iOW.windUpTime or 500 / (myHero.attackSpeed * 0.625))
 			local minionTimeToHit = attack.delay + GetDistance(attack.source, minion) / attack.speed
 			if attack.started + minionTimeToHit < GetTickCount() then
 				table.remove(_incomingDamage, i)
@@ -1170,11 +1174,12 @@ end
 function iMinions_AddProcSpell()
 	if not iMinions_OnProcessSpell then
 		function iMinions_OnProcessSpell(unit, spell)
+			enemyMinions_update()
 			if unit and (unit.type == "obj_AI_Minion" or unit.type == "obj_AI_Turret") and unit.team == myHero.team then
 				for _, minion in ipairs(_enemyMinions.objects) do
 					if ValidTarget(minion) and GetDistanceSqr(minion, spell.endPos) < 9 then
 						if _minionAttacks[unit.charName] or unit.type == "obj_AI_turret" then
-							_incomingDamage[unit.rawHash] = iMinions_getNewAttackDetails(unit, minion)
+							_incomingDamage[#_incomingDamage+1] = iMinions_getNewAttackDetails(unit, minion)
 						end
 					end
 				end
@@ -1188,7 +1193,7 @@ function iMinions_getNewAttackDetails(source, target)
 	return  {
 		source = source,
 		target = target,
-		damage = getDmg("AD", target, source),
+		damage = source:CalcDamage(target),
 		started = GetTickCount(),
 		origin = {x = source.x, z = source.z},
 		delay = source.type == "obj_AI_Turret" and minionAttacks.obj_AI_Turret.aaDelay or minionAttacks[source.charName].aaDelay,
@@ -1200,6 +1205,5 @@ end
 --[[ To do:
 	
 	- Add spell support to iMinions
-	- Automatically add callbacks for iOrbwalker
 
 ]]--
