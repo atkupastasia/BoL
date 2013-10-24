@@ -92,6 +92,7 @@ local updateTextTimers = {}
 local pingTimer = {}
 local CurrentTick = GetTickCount()
 local iSAC = iOrbWalker ~= nil
+local FriendlySmite = {}
 
 local items = {
 	ZHONYAS = {id = 3157, slot = nil, ready = false},
@@ -149,7 +150,8 @@ function OnLoad()
 	iLuxConfig:addParam("sep", "-=[ Munching Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iLuxConfig:addParam("moveToMouseFarm", "Move to Mouse while Munching?", SCRIPT_PARAM_ONOFF, false)
 	iLuxConfig:addParam("useEFarm", "Use E while Munching?", SCRIPT_PARAM_ONOFF, false)
-	iLuxConfig:addParam("StealTzeBuffs", "Steal Buffs?", SCRIPT_PARAM_ONOFF, false)
+	iLuxConfig:addParam("StealTzeBuffs", "Steal Tze Buffs?", SCRIPT_PARAM_ONOFF, false)
+	iLuxConfig:addParam("NoRageStealz", "Don't enrage jungler?", SCRIPT_PARAM_ONOFF, true)
 
 	iLuxConfig:addParam("sep", "-=[ Other Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iLuxConfig:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
@@ -162,13 +164,18 @@ function OnLoad()
 	ts.name = "Lux"
 	iLuxConfig:addTS(ts)
 
-	igniteSlot = ((myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") and SUMMONER_1) or (myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") and SUMMONER_2) or nil)
+	igniteSlot = ((myHero:GetSpellData(SUMMONER_1).name == "SummonerDot" and SUMMONER_1) or (myHero:GetSpellData(SUMMONER_2).name == "SummonerDot" and SUMMONER_2) or nil)
 	enemyMinions = minionManager(MINION_ENEMY, ERange, myHero, MINION_SORT_HEALTH_ASC)
 
 	for i = 1, objManager.maxObjects do
 		local object = objManager:getObject(i)
 		if object and object.valid and jungleObjects[object.name] and jungleObjects[object.name].isCamp then
 			jungleObjects[object.name].object = object
+		end
+	end
+	for _, ally in pairs(GetAllyHeroes()) do
+		if ally:GetSpellData(SUMMONER_1).name == "SummonerSmite" or ally:GetSpellData(SUMMONER_2).name == "SummonerSmite" then
+			FriendlySmite[#FriendlySmite+1] = ally
 		end
 	end
 end
@@ -657,6 +664,11 @@ function StealTzeBuffs()
 			if jungleMob and jungleMob.isCamp then
 				local tempMob = jungleMob.object
 				if tempMob ~= nil and tempMob.valid and tempMob.visible and not tempMob.dead and GetDistance(tempMob) < RRange then
+					if iLuxConfig.NoRageStealz then
+						for _, ally in pairs(FriendlySmite) do
+							if GetDistance(ally, tempMob) < 600 then return end
+						end
+					end
 					if getDmg("R", tempMob, myHero) >  tempMob.health then
 						CastSpell(_R, tempMob.x, tempMob.z)
 					end
