@@ -35,7 +35,7 @@ if myHero.charName ~= "Lux" then return end
 
 if VIP_USER then require "Collision" end
 if FileExist(LIB_PATH.."Prodiction.lua") then require "Prodiction" end
-if FileExist(LIB_PATH.."iSAC.lua") then require "iSAC" end
+if FileExist(LIB_PATH.."iSAC.lua") then iSAC = true require "iSAC" end
 
 --[[ Config ]]--
 
@@ -78,9 +78,9 @@ local tpProPos = {
 	[_R] = {}, }
 local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
 local tpProQ = tpPro and tpPro:AddProdictionObject(_Q, QRange, QSpeed, QDelay, QWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_Q][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
-local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, ERadius*2, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_E][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
-local tpProR = tpPro and tpPro:AddProdictionObject(_R, RRange, RSpeed, RDelay, RWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_R][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
-local iOW = iOrbWalker(550, true)
+local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, ERadius*2, myHero, (Testing and function(unit, pos, spell) CastSpell(_E, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_E][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
+local tpProR = tpPro and tpPro:AddProdictionObject(_R, RRange, RSpeed, RDelay, RWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_R, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_R][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
+local iOW = iSAC and iOrbWalker(550, true) or nil
 
 local igniteSlot = nil
 local EParticle = nil
@@ -91,7 +91,6 @@ local enemyMinions = {}
 local updateTextTimers = {}
 local pingTimer = {}
 local CurrentTick = GetTickCount()
-local iSAC = iOrbWalker ~= nil
 local FriendlySmite = {}
 
 local items = {
@@ -185,7 +184,7 @@ function OnTick()
 	ts:update()
 	enemyMinions:update()
 	updateItems()
-	iOW.AARange = GetDistance(myHero.minBBox) + myHero.range
+	if iOW then iOW.AARange = GetDistance(myHero.minBBox) + myHero.range end
 	if EParticle ~= nil and not EParticle.valid then EParticle = nil end
 
 	if not myHero.dead then
@@ -205,20 +204,20 @@ function OnTick()
 				else
 					PewPew()
 				end
-				if not _G.AutoCarry.MainMenu.AutoCarry then
-					if iSAC then
-						if iLuxConfig.orbwalk then
-							iOW:Orbwalk(mousePos, ts.target)
-						elseif iLuxConfig.moveToMouse then
-							iOW:Move(mousePos)
-						end
-					elseif iLuxConfig.moveToMouse then
-						myHero:MoveTo(mousePos.x, mousePos.z)
-					end
-				end
 			end
 			if iLuxConfig.harass then
 				Poke()
+			end
+		end
+		if iLuxConfig.pewpew and not (_G.AutoCarry and _G.AutoCarry.MainMenu.AutoCarry) then
+			if iSAC then
+				if iLuxConfig.orbwalk then
+					iOW:Orbwalk(mousePos, ts.target)
+				elseif iLuxConfig.moveToMouse then
+					iOW:Move(mousePos)
+				end
+			elseif iLuxConfig.moveToMouse then
+				myHero:MoveTo(mousePos.x, mousePos.z)
 			end
 		end
 		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or iLuxConfig.AutoTriggerE or iLuxConfig.pewpew) then
@@ -260,6 +259,10 @@ function OnDraw()
 
 		if myHero:CanUseSpell(_R) == READY then
 			DrawCircle(myHero.x, myHero.y, myHero.z, RRange, 0xFF80FF00)
+		end
+
+		if iOW then
+			DrawCircle(myHero.x, myHero.y, myHero.z, iOW.AARange, 0xFF80FF00)
 		end
 
 		if EParticle then
