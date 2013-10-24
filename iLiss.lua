@@ -297,7 +297,7 @@ function OnDraw()
 		end
 
 		if ValidTarget(ts.target) then
-			for i = 1, 10 do
+			for i = 1, 5 do
 				DrawCircle(ts.target.x, ts.target.y, ts.target.z, 90+i, 0xFFFF0000)
 			end
 		end
@@ -305,11 +305,11 @@ function OnDraw()
 		for i, minion in ipairs(enemyMinions.objects) do
 			if minion and ValidTarget(minion, QRange) then
 				if minion.health < getDmg("AD", minion, myHero) then
-					for j = 1, 10 do
+					for j = 1, 3 do
 						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFF80FF00)
 					end
 				elseif minion.health < getDmg("Q", minion, myHero) then
-					for j = 1, 10 do
+					for j = 1, 3 do
 						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFFFF0000)
 					end
 				end
