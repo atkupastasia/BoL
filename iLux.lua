@@ -80,6 +80,7 @@ local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
 local tpProQ = tpPro and tpPro:AddProdictionObject(_Q, QRange, QSpeed, QDelay, QWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_Q][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
 local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, ERadius*2, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_E][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
 local tpProR = tpPro and tpPro:AddProdictionObject(_R, RRange, RSpeed, RDelay, RWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_R][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
+local iOW = iOrbWalker(550, true)
 
 local igniteSlot = nil
 local EParticle = nil
@@ -177,6 +178,7 @@ function OnTick()
 	ts:update()
 	enemyMinions:update()
 	updateItems()
+	iOW.AARange = GetDistance(myHero.minBBox) + myHero.range
 	if EParticle ~= nil and not EParticle.valid then EParticle = nil end
 
 	if not myHero.dead then
@@ -188,11 +190,29 @@ function OnTick()
 				tpProE:EnableTarget(ts.target, true)
 				tpProR:EnableTarget(ts.target, true)
 			end
-			if iLuxConfig.pewpew then if iLuxConfig.tpPro and Testing then newPewPewTesting() elseif useNewCombo then newPewPew() else PewPew() end end
-			if iLuxConfig.harass then Poke() end
-		end
-		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) then
-			myHero:MoveTo(mousePos.x, mousePos.z)
+			if iLuxConfig.pewpew then 
+				if iLuxConfig.tpPro and Testing then 
+					newPewPewTesting()
+				elseif useNewCombo then
+					newPewPew()
+				else
+					PewPew()
+				end
+				if not _G.AutoCarry.MainMenu.AutoCarry then
+					if iSAC then
+						if iLuxConfig.orbwalk then
+							iOW:Orbwalk(mousePos, ts.target)
+						elseif iLuxConfig.moveToMouse then
+							iOW:Move(mousePos)
+						end
+					elseif iLuxConfig.moveToMouse then
+						myHero:MoveTo(mousePos.x, mousePos.z)
+					end
+				end
+			end
+			if iLuxConfig.harass then
+				Poke()
+			end
 		end
 		if EParticle and ((TriggerEOnLand or TriggerEOnLandFarm) or iLuxConfig.AutoTriggerE or iLuxConfig.pewpew) then
 			AutoTriggerE()
