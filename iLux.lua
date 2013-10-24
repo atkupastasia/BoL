@@ -34,6 +34,8 @@
 if myHero.charName ~= "Lux" then return end
 
 if VIP_USER then require "Collision" end
+if FileExist(LIB_PATH.."Prodiction.lua") then require "Prodiction" end
+if FileExist(LIB_PATH.."iSAC.lua") then require "iSAC" end
 
 --[[ Config ]]--
 
@@ -49,6 +51,9 @@ local drawPrediction = false
 local OnlyEWhenQNotReadyAndTargetCanMove = false
 local minMinionsForEFarm = 2
 local useNewCombo = true
+local tpProMaxTick = 20
+
+local Testing = false -- Warning: Do not enable. It turns your computer into a fruit, which you don't want. 
 
 --[[ Constants ]]--
 
@@ -57,7 +62,6 @@ local WRange = 1050
 local ERange, ESpeed, EDelay, ERadius = 1100, 1300, 0.150, 275
 local RRange, RSpeed, RDelay, RWidth = 3000, math.huge, 0.700, 200
 
-local AARange = 550
 local igniteRange = 600
 local defaultItemRange = 700
 
@@ -68,6 +72,14 @@ local tpQ = VIP_USER and TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth) or 
 local tpQCollision = VIP_USER and Collision(QRange, QSpeed, QDelay, QWidth) or nil
 local tpE = VIP_USER and TargetPredictionVIP(ERange, ESpeed, EDelay, ERadius*2) or TargetPrediction(ERange, ESpeed/1000, EDelay*1000, ERadius*2)
 local tpR = VIP_USER and TargetPredictionVIP(RRange, RSpeed, RDelay, RWidth) or TargetPrediction(RRange, 100, RDelay*1000, RWidth)
+local tpProPos = {
+	[_Q] = {},
+	[_E] = {},
+	[_R] = {}, }
+local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
+local tpProQ = tpPro and tpPro:AddProdictionObject(_Q, QRange, QSpeed, QDelay, QWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_Q][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
+local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, ERadius*2, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_E][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
+local tpProR = tpPro and tpPro:AddProdictionObject(_R, RRange, RSpeed, RDelay, RWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_R][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
 
 local igniteSlot = nil
 local EParticle = nil
@@ -77,6 +89,8 @@ local TriggerEOnLandFarm = false
 local enemyMinions = {}
 local updateTextTimers = {}
 local pingTimer = {}
+local CurrentTick = GetTickCount()
+local iSAC = iOrbWalker ~= nil
 
 local items = {
 	ZHONYAS = {id = 3157, slot = nil, ready = false},
@@ -111,23 +125,34 @@ local jungleObjects = {
 function OnLoad()
 	iLuxConfig = scriptConfig("iLux - Penta Rainbows", "iLux")
 
+	iLuxConfig:addParam("sep", "-=[ Hotkeys ]=-", SCRIPT_PARAM_INFO, "")
 	iLuxConfig:addParam("pewpew","PewPew!", SCRIPT_PARAM_ONKEYDOWN, false, HK1)
 	iLuxConfig:addParam("harass", "Poke!", SCRIPT_PARAM_ONKEYDOWN, false, HK2)
 	iLuxConfig:addParam("autoFarm", "Munching Minions", SCRIPT_PARAM_ONKEYDOWN, false, HK3)
 
+	iLuxConfig:addParam("sep", "-=[ Combo Settings ]=-", SCRIPT_PARAM_INFO, "")
+	if tpPro then iLuxConfig:addParam("tpPro", "Use Prodiction", SCRIPT_PARAM_ONOFF, true) end
 	iLuxConfig:addParam("QWithSingleCollide", "Q With Single Minion Collision", SCRIPT_PARAM_ONOFF, false)
 	iLuxConfig:addParam("UseUlt", "Ultimate in Combo", SCRIPT_PARAM_ONOFF, true)
+	if iSAC then iLuxConfig:addParam("orbwalk", "Orbwalk", SCRIPT_PARAM_ONOFF, true) end
+	iLuxConfig:addParam("moveToMouse", "Move To Mouse During PewPew", SCRIPT_PARAM_ONOFF, false)
+
+	iLuxConfig:addParam("sep", "-=[ Auto Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iLuxConfig:addParam("AutoTriggerE", "Auto Trigger E", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("AutoTriggerEMin", "Min Enemies for E", SCRIPT_PARAM_SLICE, 1, 1, 5, 0)
 	iLuxConfig:addParam("AutoUlt", "Auto Ultimate", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("AutoShield", "Auto Shield", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("SmartSave", "Smart Save Items", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("SafeBet", "Smart Save Health %", SCRIPT_PARAM_SLICE, SafeBet or 20, 1, 100, 0)
+
+	iLuxConfig:addParam("sep", "-=[ Munching Settings ]=-", SCRIPT_PARAM_INFO, "")
+	iLuxConfig:addParam("moveToMouseFarm", "Move to Mouse while Munching?", SCRIPT_PARAM_ONOFF, false)
+	iLuxConfig:addParam("useEFarm", "Use E while Munching?", SCRIPT_PARAM_ONOFF, false)
+	iLuxConfig:addParam("StealTzeBuffs", "Steal Buffs?", SCRIPT_PARAM_ONOFF, false)
+
+	iLuxConfig:addParam("sep", "-=[ Other Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iLuxConfig:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("damageText", "Kill Text", SCRIPT_PARAM_ONOFF, true)
-	iLuxConfig:addParam("moveToMouse", "Move To Mouse During PewPew", SCRIPT_PARAM_ONOFF, false)
-	iLuxConfig:addParam("moveToMouseFarm", "Move to Mouse while Munching?", SCRIPT_PARAM_ONOFF, false)
-	iLuxConfig:addParam("StealTzeBuffs", "Steal Buffs?", SCRIPT_PARAM_ONOFF, false)
 
 	iLuxConfig:permaShow("pewpew")
 	iLuxConfig:permaShow("harass")
@@ -139,7 +164,6 @@ function OnLoad()
 	igniteSlot = ((myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") and SUMMONER_1) or (myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") and SUMMONER_2) or nil)
 	enemyMinions = minionManager(MINION_ENEMY, ERange, myHero, MINION_SORT_HEALTH_ASC)
 
-
 	for i = 1, objManager.maxObjects do
 		local object = objManager:getObject(i)
 		if object and object.valid and jungleObjects[object.name] and jungleObjects[object.name].isCamp then
@@ -149,6 +173,7 @@ function OnLoad()
 end
 
 function OnTick()
+	CurrentTick = GetTickCount()
 	ts:update()
 	enemyMinions:update()
 	updateItems()
@@ -157,7 +182,15 @@ function OnTick()
 	if not myHero.dead then
 		AutoIgnite()
 		AutoUlt()
-		if iLuxConfig.pewpew then if useNewCombo then newPewPew() else PewPew() end end
+		if ValidTarget(ts.target) then
+			if iLuxConfig.tpPro then
+				tpProQ:EnableTarget(ts.target, true)
+				tpProE:EnableTarget(ts.target, true)
+				tpProR:EnableTarget(ts.target, true)
+			end
+			if iLuxConfig.pewpew then if iLuxConfig.tpPro and Testing then newPewPewTesting() elseif useNewCombo then newPewPew() else PewPew() end end
+			if iLuxConfig.harass then Poke() end
+		end
 		if (iLuxConfig.moveToMouse and iLuxConfig.pewpew) then
 			myHero:MoveTo(mousePos.x, mousePos.z)
 		end
@@ -165,7 +198,6 @@ function OnTick()
 			AutoTriggerE()
 		end
 		if iLuxConfig.autoFarm and not (iLuxConfig.pewpew or iLuxConfig.harass) then autoFarm() end
-		if iLuxConfig.harass then Poke() end
 		if iLuxConfig.damageText then damageText() end
 		if iLuxConfig.StealTzeBuffs then StealTzeBuffs() end
 	end
@@ -245,8 +277,87 @@ end
 
 --[[ Combat Functions ]]--
 
+function newPewPewTesting() -- Experimental
+	tpProQ:EnableTarget(myHero, false)
+	tpProE:EnableTarget(myHero, false)
+	tpProR:EnableTarget(myHero, false)
+	if ts.target.canMove and myHero:CanUseSpell(_Q) == READY then
+		tpProQ:EnableTarget(ts.target, true)
+	elseif not ts.target.canMove then
+		local calcDmg = calculateDamage(ts.target, true, true)
+		local passiveOn = TargetHaveBuff("luxilluminatingfraulein", ts.target)
+		if calcDmg.E + (passiveOn and calcDmg.passive or 0) > ts.target.health then
+			if myHero:CanUseSpell(_E) == READY and not EParticle then
+				tpProE:EnableTarget(ts.target, true)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+		elseif calcDmg.Q + (passiveOn and calcDmg.passive or 0) > ts.target.health then
+			if myHero:CanUseSpell(_Q) == READY then tpProQ:EnableTarget(ts.target, true) end
+		elseif QPos and EPos and calcDmg.Q + calcDmg.E + (passiveOn and calcDmg.passive * 2 or calcDmg.passive) > ts.target.health then
+			if myHero:CanUseSpell(_Q) == READY then tpProQ:EnableTarget(ts.target, true) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle then
+				tpProE:EnableTarget(ts.target, true)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+		elseif (calcDmg.DFG > 0 and 1.2 * (calcDmg.Q + calcDmg.E) or (calcDmg.Q + calcDmg.E)) + calcDmg.items + calcDmg.ignite > ts.target.health then
+			for item, itemInfo in pairs(items.itemsList) do
+				if itemInfo.ready and itemInfo.useOnKill then
+					CastSpell(itemInfo.slot, ts.target)
+				end
+			end
+			if myHero:CanUseSpell(_Q) == READY then tpProQ:EnableTarget(ts.target, true) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle then
+				tpProE:EnableTarget(ts.target, true)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+			if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then CastSpell(igniteSlot, ts.target) end
+		elseif iLuxConfig.UseUlt and myHero:CanUseSpell(_R) == READY and RPos and calcDmg.total > ts.target.health then
+			for item, itemInfo in pairs(items.itemsList) do
+				if itemInfo.ready and itemInfo.useOnKill then
+					CastSpell(itemInfo.slot, ts.target)
+				end
+			end
+			if myHero:CanUseSpell(_Q) == READY then tpProQ:EnableTarget(ts.target, true) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle then
+				tpProE:EnableTarget(ts.target, true)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+			if igniteSlot and myHero:CanUseSpell(igniteSlot) == READY then CastSpell(igniteSlot, ts.target) end
+			if myHero:CanUseSpell(_R) == READY then tpProR:EnableTarget(ts.target, true) end
+		else
+			if myHero:CanUseSpell(_Q) == READY then tpProQ:EnableTarget(ts.target, true) end
+			if myHero:CanUseSpell(_E) == READY and not EParticle then
+				tpProE:EnableTarget(ts.target, true)
+				TriggerEOnLand = true
+				TriggerEOnLandFarm = false
+			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+				CastSpell(_E)
+			end
+		end
+	elseif myHero:CanUseSpell(_E) == READY and EPos and (not OnlyEWhenQNotReadyAndTargetCanMove or myHero:CanUseSpell(_Q) ~= READY) then
+		if not EParticle then
+			tpProE:EnableTarget(ts.target, true)
+			TriggerEOnLand = true
+			TriggerEOnLandFarm = false
+		elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
+			CastSpell(_E)
+		end
+	end
+end
+
 function newPewPew()
-	if not ValidTarget(ts.target) then return end
 	local QPos = myHero:CanUseSpell(_Q) == READY and GetQPrediction(ts.target)
 	local EPos = myHero:CanUseSpell(_E) == READY and GetEPrediction(ts.target) or EParticle
 	local RPos = myHero:CanUseSpell(_R) == READY and GetRPrediction(ts.target)
@@ -410,7 +521,7 @@ function PewPew()
 end
 
 function Poke()
-	if myHero:CanUseSpell(_E) == READY and ValidTarget(ts.target) then
+	if myHero:CanUseSpell(_E) == READY then
 		if not EParticle then
 			if VIP_USER then
 				local _,_,tempEPos = tpE:GetPrediction(ts.target)
@@ -443,7 +554,7 @@ function autoFarm()
 			table.insert(killablePoints, Vector(minion))
 		end
 	end
-	if myHero:CanUseSpell(_E) == READY then
+	if myHero:CanUseSpell(_E) == READY and iLuxConfig.useEFarm then
 		if not EParticle then
 			if #killableMinions >= minMinionsForEFarm then
 				local mec = MEC(killablePoints)
@@ -494,6 +605,7 @@ function AutoUlt()
 					pingTimer[enemy.charName] = GetTickCount()
 				end
 				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt then
+					if iLuxConfig.tpPro then tpProR:EnableTarget(enemy, true) end
 					local RPos = GetRPrediction(enemy)
 					if RPos then
 						CastSpell(_R, RPos.x, RPos.z)
@@ -503,6 +615,7 @@ function AutoUlt()
 			end
 		end
 	end
+	--tpProR:EnableTarget(myHero, false)
 end
 
 function AutoTriggerE()
@@ -555,8 +668,25 @@ end
 
 --[[ Prediction and Calculations ]]--
 
-function GetQPrediction(enemy) 
-	if VIP_USER then
+function GetQPrediction(enemy)
+	if iLuxConfig.tpPro then
+		local tpProPosSub = tpProPos[_Q][enemy.networkID]
+		if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
+			local QPos = tpProPosSub.pos
+			if QPos then
+				local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
+				if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
+					return QPos
+				else
+					return nil
+				end
+			else
+				return nil
+			end
+		else
+			return nil
+		end
+	elseif VIP_USER then
 		if minHitChance ~= 0 and tpQ:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,QPos = tpQ:GetPrediction(enemy)
 		local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
@@ -571,7 +701,10 @@ function GetQPrediction(enemy)
 end
 
 function GetEPrediction(enemy)
-	if VIP_USER then
+	if iLuxConfig.tpPro then
+		local tpProPosSub = tpProPos[_E][enemy.networkID]
+		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+	elseif VIP_USER then
 		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,EPos = tpE:GetPrediction(enemy)
 		return EPos
@@ -581,7 +714,10 @@ function GetEPrediction(enemy)
 end
 
 function GetRPrediction(enemy)
-	if VIP_USER then
+	if iLuxConfig.tpPro then
+		local tpProPosSub = tpProPos[_E][enemy.networkID]
+		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+	elseif VIP_USER then
 		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,RPos = tpR:GetPrediction(enemy)
 		return RPos
@@ -596,9 +732,9 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	--local EPos = tpE:GetHitChance(enemy) > minHitChance and tempEPos or nil
 	local safeNet = 1 - damageSafetyNet / 100
 	local returnDamage = {}
-	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((QPos and QPos ~= 1 and GetDistance({x = QPos.x, z = QPos.z}) < QRange or (QPos ~= 1 and GetDistance(enemy) < QRange)) and not checkRange) and getDmg("Q", enemy, myHero)) or 0 )
+	returnDamage.Qbase = (( (myHero:CanUseSpell(_Q) == READY or not readyCheck) and ((iLuxConfig.tpPro and Testing) or ((QPos and QPos ~= 1 and GetDistance({x = QPos.x, z = QPos.z}) < QRange or (QPos ~= 1 and GetDistance(enemy) < QRange)) and not checkRange)) and getDmg("Q", enemy, myHero)) or 0 )
 	--returnDamage.Wbase = (( (myHero:CanUseSpell(_W) == READY or not readyCheck) and (GetDistance(enemy) < WRange or not checkRange) and getDmg("W", enemy, myHero)) or 0 )
-	returnDamage.Ebase = (( (myHero:CanUseSpell(_E) == READY or not readyCheck) and ((EPos and EPos ~= 1 and (EPos ~= EParticle and GetDistance({x = EPos.x, z = EPos.z}) < ERange or GetDistance(EParticle, enemy) < ERadius) or (EPos ~= 1 and GetDistance(enemy) < ERange)) and not checkRange) and getDmg("E", enemy, myHero)) or 0 )
+	returnDamage.Ebase = (( (myHero:CanUseSpell(_E) == READY or not readyCheck) and ((iLuxConfig.tpPro and Testing) or ((EPos and EPos ~= 1 and (EPos ~= EParticle and GetDistance({x = EPos.x, z = EPos.z}) < ERange or GetDistance(EParticle, enemy) < ERadius) or (EPos ~= 1 and GetDistance(enemy) < ERange)) and not checkRange)) and getDmg("E", enemy, myHero)) or 0 )
 	returnDamage.Rbase = (( (myHero:CanUseSpell(_R) == READY or not readyCheck) and (GetDistance(enemy) < RRange or not checkRange) and getDmg("R", enemy, myHero)) or 0 )
 	returnDamage.DFG = (( (items.itemsList["DFG"].ready or (items.itemsList["DFG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("DFG", enemy, myHero)) or 0 )
 	returnDamage.HXG = (( (items.itemsList["HXG"].ready or (items.itemsList["HXG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("HXG", enemy, myHero)) or 0 )
