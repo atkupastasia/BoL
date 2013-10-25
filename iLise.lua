@@ -148,7 +148,7 @@ function OnTick()
 
 	if not myHero.dead then
 		iSum:AutoIgnite()	
-		if ValidTarget(ts.target) then if iLiseConfig.tpPro then tpProW:EnableTarget(ts.target, true) tpProE:EnableTarget(ts.target, true) end
+		if ValidTarget(ts.target) then if iLiseConfig.tpPro then tpProW:EnableTarget(ts.target, true) tpProE:EnableTarget(ts.target, true) end end
 		if iLiseConfig.autoKS then AutoKS() end
 		if iLiseConfig.pewpew then PewPew() if iLiseConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) end end
 		if iLiseConfig.harass then Poke() end
