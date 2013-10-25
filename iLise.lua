@@ -139,6 +139,7 @@ function OnLoad()
 end
 
 function OnTick()
+	CurrentTick = GetTickCount()
 	Humanform = myHero:GetSpellData(_Q).name == "EliseHumanQ"
 	enemyMinions:update()
 	AARange = GetDistance(myHero.minBBox) + myHero.range
