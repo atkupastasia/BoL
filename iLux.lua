@@ -155,6 +155,7 @@ function OnLoad()
 	iLuxConfig:addParam("sep", "-=[ Other Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iLuxConfig:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
 	iLuxConfig:addParam("damageText", "Kill Text", SCRIPT_PARAM_ONOFF, true)
+	iLuxConfig:addParam("ultAlert", "Ult Notifier", SCRIPT_PARAM_ONOFF, true)
 
 	iLuxConfig:permaShow("pewpew")
 	iLuxConfig:permaShow("harass")
@@ -620,9 +621,11 @@ function AutoUlt()
 	if myHero:CanUseSpell(_R) == READY then
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if ValidTarget(enemy) and (TargetHaveBuff("luxilluminatingfraulein", enemy) and getDmg("P", enemy, myHero) + getDmg("R", enemy, myHero) or getDmg("R", enemy, myHero)) > enemy.health then
-				if pingTimer[enemy.charName] == nil or pingTimer[enemy.charName] < GetTickCount() - 10000 then
-					PingSignal(PING_NORMAL, enemy.x, enemy.y, enemy.z, 2)
-					pingTimer[enemy.charName] = GetTickCount()
+				if iLuxConfig.ultAlert then
+					if pingTimer[enemy.charName] == nil or pingTimer[enemy.charName] < GetTickCount() - 10000 then
+						PingSignal(PING_NORMAL, enemy.x, enemy.y, enemy.z, 2)
+						pingTimer[enemy.charName] = GetTickCount()
+					end
 				end
 				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt and (not ts.target or (enemy.networkID ~= ts.target.networkID or not EParticle)) then
 					if iLuxConfig.tpPro then tpProR:EnableTarget(enemy, true) end
