@@ -27,7 +27,7 @@
 > - Steal Tze Buffs - \*[BETA] Steals Jungle buffs.\*
 > - Prodiction - *Supports Prodiction*
 
-- ####Icy iLise
+- ####iLise
 > ###### Features
 > - PewPew! - *Main Comboo*
 > - Poke! - *Harass with Q*
