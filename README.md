@@ -25,6 +25,18 @@
 > - Auto Shield - *Automatically shields you.*
 > - Smart Save - *Automatically uses Zhonya's and Wooglet's.*
 > - Steal Tze Buffs - \*[BETA] Steals Jungle buffs.\*
+> - Prodiction - *Supports Prodiction*
+
+- ####Icy iLise
+> ###### Features
+> - PewPew! - *Main Comboo*
+> - Poke! - *Harass with Q*
+> - Munching Minions - *Auto Farm with AA and Q*
+> - Munching Jungle - *Auto Farm jungle*
+> - Toggable Spells - *Choose which spells you would like to use*
+> - Auto KS - *Auto KS with Q* 
+> - Orb Walking - *Orb Walking like a pro*
+> - Prodiction - *Supports Prodiction*
 
 - ####[Icy iLiss] (http://botoflegends.com/forum/topic/4288-script-icy-iliss/)
 > ###### Features
@@ -33,22 +45,22 @@
 > - Munching Minions - *Auto Farm with AA and Q*
 > - Smart Save - *Automatically uses Ultimate, Zhonya's and Wooglet's.*
 
-
 - ####[iCass Classic - No Chickenshit] (http://botoflegends.com/forum/topic/4437-script-icass-classic/)
 > ###### Features
 > - PewPew! - *Main Combo*
 > - Poke! - *Harass with Q*
 > - Auto E - *Auto E poisoned targets*
 
-------------------
-###Unfinished/Partial/WIP Scripts:
-######*Please send me a PM or yell at me in the shoutbox if you have any suggestions or ideas for these scripts. There are no threads for these as they are not finished yet.*
 - ####iYo
 > ###### Features
 > - PewPew! - *Main Combo*
 > - Munching Minions - *Auto Farm with AA and W*
 > - Orb Walking - *Orb Walking like a pro*
 > - Auto Ultimate - *Zombies incoming!*
+
+------------------
+###Unfinished/Partial/WIP Scripts:
+######*Please send me a PM or yell at me in the shoutbox if you have any suggestions or ideas for these scripts. There are no threads for these as they are not finished yet.*
 
 - ####iRelia
 > ###### Features
