@@ -41,7 +41,7 @@ if FileExist(LIB_PATH.."iSAC.lua") then iSAC = true require "iSAC" end
 
 local HK1 = string.byte("A")
 local HK2 = string.byte("T")
-local HK3 = string.byte("C")
+local HK3 = string.byte("C") 
 local HK4 = string.byte("X") -- Derp, not used but still here.
 local SafeBet = 20 -- %
 local AutoShieldPerc = 5 -- %
@@ -60,7 +60,7 @@ local Testing = false -- Warning: Do not enable. It turns your computer into a f
 local QRange, QSpeed, QDelay, QWidth = 1150, 1175, 0.250, 80
 local WRange = 1050
 local ERange, ESpeed, EDelay, ERadius = 1100, 1300, 0.150, 275
-local RRange, RSpeed, RDelay, RWidth = 3000, math.huge, 0.700, 200
+local RRange, RSpeed, RDelay, RWidth = 3500, math.huge, 0.700, 200
 
 local igniteRange = 600
 local defaultItemRange = 700
@@ -106,10 +106,10 @@ local items = {
 		["DFG"] = {id = 3128, slot = nil, ready = false, useOnKill = true},
 		["HXG"] = {id = 3146, slot = nil, ready = false, useOnKill = true},
 		["BWC"] = {id = 3144, slot = nil, ready = false, useOnKill = true},
+		["BLACKFIRE"] = {id = 3188, slot = nil, READY = false, useOnKill = true},
 	},
 	passiveItemsList = {
 		["LIANDRYS"] = {id = 3151, slot = nil},
-		["BLACKFIRE"] = {id = 3188, slot = nil},
 	},
 }
 
@@ -292,11 +292,11 @@ function OnDraw()
 		for i, minion in ipairs(enemyMinions.objects) do
 			if minion and ValidTarget(minion, QRange) then
 				if minion.health < (getDmg("AD", minion, myHero) + (TargetHaveBuff("luxilluminatingfraulein", minion) and getDmg("P", minion, myHero) or 0)) then
-					for j = 1, 10 do
+					for j = 1, 3 do
 						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFF80FF00)
 					end
 				elseif minion.health < getDmg("E", minion, myHero) then
-					for j = 1, 10 do
+					for j = 1, 3 do
 						DrawCircle(minion.x, minion.y, minion.z, 50+j, 0xFFFF0000)
 					end
 				end
@@ -335,7 +335,7 @@ function newPewPewTesting() -- Experimental
 			elseif EParticle and myHero:CanUseSpell(_E) == READY and GetDistance(EParticle, ts.target) < ERadius then
 				CastSpell(_E)
 			end
-		elseif (calcDmg.DFG > 0 and 1.2 * (calcDmg.Q + calcDmg.E) or (calcDmg.Q + calcDmg.E)) + calcDmg.items + calcDmg.ignite > ts.target.health then
+		elseif ((calcDmg.DFG > 0 or calcDmg.BLACKFIRE > 0) and 1.2 * (calcDmg.Q + calcDmg.E) or (calcDmg.Q + calcDmg.E)) + calcDmg.items + calcDmg.ignite > ts.target.health then
 			for item, itemInfo in pairs(items.itemsList) do
 				if itemInfo.ready and itemInfo.useOnKill then
 					CastSpell(itemInfo.slot, ts.target)
@@ -620,7 +620,7 @@ function AutoUlt()
 	if myHero:CanUseSpell(_R) == READY then
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if ValidTarget(enemy) and (TargetHaveBuff("luxilluminatingfraulein", enemy) and getDmg("P", enemy, myHero) + getDmg("R", enemy, myHero) or getDmg("R", enemy, myHero)) > enemy.health then
-				if pingTimer[enemy.charName] == nil or pingTimer[enemy.charName] < GetTickCount() - 5000 then
+				if pingTimer[enemy.charName] == nil or pingTimer[enemy.charName] < GetTickCount() - 10000 then
 					PingSignal(PING_NORMAL, enemy.x, enemy.y, enemy.z, 2)
 					pingTimer[enemy.charName] = GetTickCount()
 				end
@@ -764,8 +764,9 @@ function calculateDamage(enemy, checkRange, readyCheck, QPos, EPos)
 	returnDamage.DFG = (( (items.itemsList["DFG"].ready or (items.itemsList["DFG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("DFG", enemy, myHero)) or 0 )
 	returnDamage.HXG = (( (items.itemsList["HXG"].ready or (items.itemsList["HXG"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("HXG", enemy, myHero)) or 0 )
 	returnDamage.BWC = (( (items.itemsList["BWC"].ready or (items.itemsList["BWC"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("BWC", enemy, myHero)) or 0 )
+	returnDamage.BLACKFIRE = (( (items.itemsList["BLACKFIRE"].ready or (items.itemsList["BLACKFIRE"].slot and not readyCheck)) and (GetDistance(enemy) < defaultItemRange or not checkRange) and getDmg("BLACKFIRE", enemy, myHero)) or 0 )
 	returnDamage.LIANDRYS = (( items.passiveItemsList["LIANDRYS"].slot and getDmg("LIANDRYS", enemy, myHero)) or 0)
-	returnDamage.BLACKFIRE = (( items.passiveItemsList["BLACKFIRE"].slot and getDmg("BLACKFIRE", enemy, myHero)) or 0)
+	--returnDamage.BLACKFIRE = (( items.passiveItemsList["BLACKFIRE"].slot and getDmg("BLACKFIRE", enemy, myHero)) or 0)
 	returnDamage.ignite = (( igniteSlot and (myHero:CanUseSpell(igniteSlot) == READY or not readyCheck) and (GetDistance(enemy) < igniteRange or not checkRange) and getDmg("IGNITE", enemy, myHero)) or 0)
 	returnDamage.passive = getDmg("P", enemy, myHero)
 
