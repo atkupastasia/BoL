@@ -2,7 +2,8 @@
 
 if myHero.charName ~= "Elise" then return end
 
-require "Collision"
+if VIP_USER then require "Collision" end
+if VIP_USER and FileExist(LIB_PATH.."Prodiction.lua") then require "Prodiction" end
 require "iSAC"
 
 --[[ Config ]]--
@@ -13,6 +14,7 @@ local HK3 = string.byte("C")
 local HK4 = string.byte("X")
 local minHitChance = 0.3
 local LeapW = false
+local tpProMaxTick = 20
 
 --[[ Constants ]]--
 
@@ -27,10 +29,14 @@ local AARange = 600
 --[[ Script Variables ]]--
 
 local ts = TargetSelector(TARGET_LESS_CAST, 1200, DAMAGE_MAGIC, false)
-local tpE = TargetPredictionVIP(ERange, ESpeed, EDelay, EWidth)
-local tpECollision = Collision(ERange, ESpeed, EDelay, EWidth*2)
-local tpW = TargetPredictionVIP(WRange, WSpeed, WDelay, WWidth)
-local tpWCollision = Collision(WRange, WSpeed, WDelay, WWidth*2)
+local tpW = VIP_USER and TargetPredictionVIP(WRange, WSpeed, WDelay, WWidth) or TargetPrediction(WRange, WSpeed/1000, WDelay*1000, WWidth)
+local tpWCollision = VIP_USER and Collision(WRange, WSpeed, WDelay, WWidth*2)
+local tpE = VIP_USER and TargetPredictionVIP(ERange, ESpeed, EDelay, EWidth) or TargetPrediction(ERange, ESpeed/1000, EDelay*1000, EWidth)
+local tpECollision = VIP_USER and Collision(ERange, ESpeed, EDelay, EWidth*2)
+local tpProPos = { [_W] = {}, [_E] = {}, }
+local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
+local tpProW = tpPro and tpPro:AddProdictionObject(_W, WRange, WSpeed, WDelay, WWidth, myHero, function(unit, pos, spell) if not unit or not pos then return end tpProPos[_W][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end) or nil
+local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, EWidth, myHero, function(unit, pos, spell) if not unit or not pos then return end tpProPos[_E][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end) or nil
 local iOW = iOrbWalker(AARange, true)
 local iSum = iSummoners()
 
@@ -93,6 +99,7 @@ function OnLoad()
 	iLiseConfig:addParam("jungleFarm", "Munching Jungle", SCRIPT_PARAM_ONKEYDOWN, false, HK3)
 	iLiseConfig:addParam("autoKS", "Auto Q KS", SCRIPT_PARAM_ONOFF, true)
 	iLiseConfig:addParam("Orbwalk", "Orbwalk", SCRIPT_PARAM_ONOFF, true)
+	if tpPro then iLiseConfig:addParam("tpPro", "Use Prodiction", SCRIPT_PARAM_ONOFF, true) end
 
 	iLiseConfig:permaShow("pewpew")
 	iLiseConfig:permaShow("harass")
@@ -132,15 +139,16 @@ function OnLoad()
 end
 
 function OnTick()
+	Humanform = myHero:GetSpellData(_Q).name == "EliseHumanQ"
 	enemyMinions:update()
 	AARange = GetDistance(myHero.minBBox) + myHero.range
 	iOW.AARange = AARange
 	ts.range = (Humanform or iLiseSpellConfig.useSpiderE) and 1200 or SpiderRange
 	ts:update()
-	Humanform = myHero:GetSpellData(_Q).name == "EliseHumanQ"
 
 	if not myHero.dead then
-		iSum:AutoIgnite()
+		iSum:AutoIgnite()	
+		if ValidTarget(ts.target) then if iLiseConfig.tpPro then tpProW:EnableTarget(ts.target, true) tpProE:EnableTarget(ts.target, true) end
 		if iLiseConfig.autoKS then AutoKS() end
 		if iLiseConfig.pewpew then PewPew() if iLiseConfig.Orbwalk then iOW:Orbwalk(mousePos, ts.target) end end
 		if iLiseConfig.harass then Poke() end
@@ -279,18 +287,32 @@ end
 
 --[[ Predictions and Calculations ]]--
 
-function GetEPrediction(enemy) 
-	if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
-	local EPos,_,_ = tpE:GetPrediction(enemy)
-	local willCollide, collideArray = tpECollision:GetMinionCollision(myHero, EPos)
-	return not willCollide and EPos or nil
+function GetWPrediction(enemy) 
+	if iLiseConfig.tpPro then
+		local tpProPosSub = tpProPos[_W][enemy.networkID]
+		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+	elseif VIP_USER then
+		if minHitChance ~= 0 and tpW:GetHitChance(enemy) < minHitChance then return nil end
+		local WPos,_,_ = tpW:GetPrediction(enemy)
+		local willCollide, collideArray = tpWCollision:GetMinionCollision(myHero, WPos)
+		return not willCollide and WPos or nil
+	else
+		return tpW:GetPrediction(enemy)
+	end
 end
 
-function GetWPrediction(enemy) 
-	if minHitChance ~= 0 and tpW:GetHitChance(enemy) < minHitChance then return nil end
-	local WPos,_,_ = tpW:GetPrediction(enemy)
-	local willCollide, collideArray = tpWCollision:GetMinionCollision(myHero, WPos)
-	return not willCollide and WPos or nil
+function GetEPrediction(enemy)
+	if iLiseConfig.tpPro then
+		local tpProPosSub = tpProPos[_E][enemy.networkID]
+		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+	elseif VIP_USER then
+		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
+		local EPos,_,_ = tpE:GetPrediction(enemy)
+		local willCollide, collideArray = tpECollision:GetMinionCollision(myHero, EPos)
+		return not willCollide and EPos or nil
+	else
+		return tpE:GetPrediction(enemy)
+	end
 end
 
 --[[ Garbage Bin ]]--
