@@ -12,7 +12,7 @@
 		]]--
 
 if VIP_USER then require "Collision" end
-local _customValues = assert(loadfile(LIB_PATH.."iSAC - Custom Values.lua"))()
+local _customValues = FileExist(LIB_PATH.."iSAC - Custom Values.lua") and assert(loadfile(LIB_PATH.."iSAC - Custom Values.lua"))()
 
 --[[ 	iOrbWalker Class 
 	
