@@ -627,7 +627,7 @@ function AutoUlt()
 						pingTimer[enemy.charName] = GetTickCount()
 					end
 				end
-				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt and (not ts.target or (enemy.networkID ~= ts.target.networkID or not EParticle)) then
+				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt and (not ts.target or (enemy.networkID ~= ts.target.networkID or (not EParticle or myHero:CanUseSpell(_E) == READY))) then
 					if iLuxConfig.tpPro then tpProR:EnableTarget(enemy, true) end
 					local RPos = GetRPrediction(enemy)
 					if RPos then
