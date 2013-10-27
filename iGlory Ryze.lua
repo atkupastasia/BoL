@@ -46,7 +46,7 @@ RyzeConfigConfig = {
 }
 
 local floattext = {"Cooldown!","Murder him!"}
-local levelSequence = {nil,0,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3} -- Delete this line to disable leveling your shit.
+--local levelSequence = {nil,0,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3} -- Delete this line to disable leveling your shit.
 
 local quotes = {
 	'Let\'s go, let\'s go!',
@@ -58,9 +58,9 @@ local quotes = {
 
 --[[ Constants ]]--
 
-local QRange = 650
-local WRange = 625
-local ERange = 675
+local QRange = 600
+local WRange = 600
+local ERange = 600
 local RRange = 200
 local JunglERange = 1000
 local turretRange = 950
@@ -116,6 +116,7 @@ function OnLoad()
 	RyzeConfig:addParam("useUlti", "Use ultimate in combos", SCRIPT_PARAM_ONOFF, true)
 	RyzeConfig:addParam("useMura", "Auto Muramana", SCRIPT_PARAM_ONOFF, true)
 	RyzeConfig:addParam("PowerFarm", "Power Farm", SCRIPT_PARAM_ONKEYTOGGLE, false, 73)
+	RyzeConfig:addParam("QFarm", "Q Farm", SCRIPT_PARAM_ONKEYTOGGLE, false, 85)
 	RyzeConfig:addParam("Orbwalk", "Orbwalk", SCRIPT_PARAM_ONOFF, true)
 	RyzeConfig:addParam("MoveToMouse", "Move To Mouse", SCRIPT_PARAM_ONOFF, true)
 	RyzeConfig:addParam("Quotes", "Show Cheesy Ryze Quotes", SCRIPT_PARAM_ONOFF, true)
@@ -228,13 +229,15 @@ function OnTick()
 			JungleClear()
 		elseif RyzeConfig.PowerFarm and RyzeSettings.PowerMinMana<=((myHero.mana/myHero.maxMana)*100) then
 			PowerFarm()
+		elseif RyzeConfig.QFarm and RyzeSettings.PowerMinMana<=((myHero.mana/myHero.maxMana)*100) then
+			QFarm()
 		end
 	end
 end
 
 function OnProcessSpell(unit, spell)
 	iOW:OnProcessSpell(unit, spell)
-	if ValidTarget(unit, WRange) and UnderTurret(unit, false) and GetDistance(spell.endPos, myHero) < 10 and myHero:CanUseSpell(_W) == READY then
+	if ValidTarget(unit, WRange) and unit.type == "obj_AI_Hero" and UnderTurret(unit, false) and GetDistance(spell.endPos, myHero) < 10 and myHero:CanUseSpell(_W) == READY then
 		CastSpellP(_W, unit)
 	end
 end
@@ -310,13 +313,23 @@ end
 function PowerFarm()
 	if RyzeConfig.Orbwalk then iOW:Orbwalk(mousePos, getEnemyMinions()[1]) end
 	for _, minion in ipairs(getEnemyMinions()) do
-		if ValidTarget(minion) then
+		if ValidTarget(minion, QRange) then
 			if myHero:CanUseSpell(_Q) == READY and minion.health < getDmg("Q", minion, myHero) then
 				CastSpellP(SPELL_1, minion)
 			elseif myHero:CanUseSpell(_W) == READY and minion.health < getDmg("W", minion, myHero) then
 				CastSpellP(SPELL_2, minion)
 			elseif myHero:CanUseSpell(_E) == READY and minion.health < getDmg("E", minion, myHero) then
 				CastSpellP(SPELL_3, minion)
+			end
+		end
+	end
+end
+
+function QFarm()
+	if myHero:CanUseSpell(_Q) == READY then
+		for _, minion in ipairs(getEnemyMinions()) do
+			if ValidTarget(minion, QRange) and minion.health < getDmg("Q", minion, myHero) then
+				CastSpellP(SPELL_1, minion)
 			end
 		end
 	end
