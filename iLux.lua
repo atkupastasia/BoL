@@ -68,6 +68,7 @@ local defaultItemRange = 700
 --[[ Script Variables ]]--
 
 local ts = TargetSelector(TARGET_LESS_CAST,QRange,DAMAGE_MAGIC,false)
+local tsAA = TargetSelector(TARGET_LESS_CAST,600,DAMAGE_MAGIC,false)
 local tpQ = VIP_USER and TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth) or TargetPrediction(QRange, QSpeed/1000, QDelay*1000, QWidth)
 local tpQCollision = VIP_USER and Collision(QRange, QSpeed, QDelay, QWidth) or nil
 local tpE = VIP_USER and TargetPredictionVIP(ERange, ESpeed, EDelay, ERadius*2) or TargetPrediction(ERange, ESpeed/1000, EDelay*1000, ERadius*2)
@@ -213,7 +214,9 @@ function OnTick()
 		if iLuxConfig.pewpew and not (_G.AutoCarry and _G.AutoCarry.MainMenu.AutoCarry) then
 			if iSAC then
 				if iLuxConfig.orbwalk then
-					iOW:Orbwalk(mousePos, ts.target)
+					tsAA.range = iOW.AARange
+					tsAA:update()
+					iOW:Orbwalk(mousePos, tsAA.target)
 				elseif iLuxConfig.moveToMouse then
 					iOW:Move(mousePos)
 				end
@@ -627,7 +630,8 @@ function AutoUlt()
 						pingTimer[enemy.charName] = GetTickCount()
 					end
 				end
-				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt and (not ts.target or (enemy.networkID ~= ts.target.networkID or (not EParticle or myHero:CanUseSpell(_E) == READY))) then
+				--if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt and (not ts.target or (enemy.networkID ~= ts.target.networkID or (not EParticle or myHero:CanUseSpell(_E) == READY))) then
+				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt then
 					if iLuxConfig.tpPro then tpProR:EnableTarget(enemy, true) end
 					local RPos = GetRPrediction(enemy)
 					if RPos then
@@ -744,7 +748,14 @@ end
 function GetRPrediction(enemy)
 	if iLuxConfig.tpPro then
 		local tpProPosSub = tpProPos[_E][enemy.networkID]
-		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+		if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
+			return tpProPosSub.pos or nil
+		else
+			local RPos, _, hitchance = tpProR:GetPrediction(enemy)
+			if RPos and (minHitChance == 0 or hitchance > minHitChance) then
+				return RPos
+			end
+		end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,RPos = tpR:GetPrediction(enemy)
