@@ -20,7 +20,7 @@ local tpProMaxTick = 20
 
 local QRange = 650
 local WRange, WSpeed, WDelay, WWidth = 950, 1000, 0.250, 100
-local ERange, ESpeed, EDelay, EWidth = 1050, 1300, 0.250, 70
+local ERange, ESpeed, EDelay, EWidth = 1050, 1300, 0.250, 90
 
 local SpiderRange = 550
 
