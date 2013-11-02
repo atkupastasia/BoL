@@ -32,7 +32,7 @@ local ts = TargetSelector(TARGET_LESS_CAST, 1200, DAMAGE_MAGIC, false)
 local tpW = VIP_USER and TargetPredictionVIP(WRange, WSpeed, WDelay, WWidth) or TargetPrediction(WRange, WSpeed/1000, WDelay*1000, WWidth)
 local tpWCollision = VIP_USER and Collision(WRange, WSpeed, WDelay, WWidth*2)
 local tpE = VIP_USER and TargetPredictionVIP(ERange, ESpeed, EDelay, EWidth) or TargetPrediction(ERange, ESpeed/1000, EDelay*1000, EWidth)
-local tpECollision = VIP_USER and Collision(ERange, ESpeed, EDelay, EWidth*2)
+local tpECollision = VIP_USER and Collision(ERange, ESpeed, EDelay, EWidth)
 local tpProPos = { [_W] = {}, [_E] = {}, }
 local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
 local tpProW = tpPro and tpPro:AddProdictionObject(_W, WRange, WSpeed, WDelay, WWidth, myHero, function(unit, pos, spell) if not unit or not pos then return end tpProPos[_W][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end) or nil
@@ -291,7 +291,8 @@ end
 function GetWPrediction(enemy) 
 	if iLiseConfig.tpPro then
 		local tpProPosSub = tpProPos[_W][enemy.networkID]
-		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+		local willCollide, collideArray = tpWCollision:GetMinionCollision(myHero, tpProPosSub.pos)
+		return not willCollide and tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpW:GetHitChance(enemy) < minHitChance then return nil end
 		local WPos,_,_ = tpW:GetPrediction(enemy)
@@ -305,7 +306,8 @@ end
 function GetEPrediction(enemy)
 	if iLiseConfig.tpPro then
 		local tpProPosSub = tpProPos[_E][enemy.networkID]
-		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+		local willCollide, collideArray = tpECollision:GetMinionCollision(myHero, tpProPosSub.pos)
+		return not willCollide and tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
 		local EPos,_,_ = tpE:GetPrediction(enemy)
