@@ -60,7 +60,7 @@ local Testing = false -- Warning: Do not enable. It turns your computer into a f
 local QRange, QSpeed, QDelay, QWidth = 1150, 1175, 0.250, 80
 local WRange = 1050
 local ERange, ESpeed, EDelay, ERadius = 1100, 1300, 0.150, 275
-local RRange, RSpeed, RDelay, RWidth = 3500, math.huge, 0.700, 200
+local RRange, RSpeed, RDelay, RWidth = 3340, math.huge, 0.700, 200
 
 local igniteRange = 600
 local defaultItemRange = 700
@@ -750,11 +750,11 @@ function GetRPrediction(enemy)
 		local tpProPosSub = tpProPos[_E][enemy.networkID]
 		if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
 			return tpProPosSub.pos or nil
-		else
-			local RPos, _, hitchance = tpProR:GetPrediction(enemy)
-			if RPos and (minHitChance == 0 or hitchance > minHitChance) then
-				return RPos
-			end
+		--else
+		--	local RPos, _, hitchance = tpProR:GetPrediction(enemy)
+		--	if RPos and (minHitChance == 0 or hitchance > minHitChance) then
+		--		return RPos
+		--	end
 		end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
