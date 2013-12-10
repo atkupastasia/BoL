@@ -234,7 +234,7 @@ function OnTick()
 end
 
 function OnCreateObj(object)
-	if object.name:find("LuxLightstrike_tar") then
+	if object.name:find("LuxLightstrike_tar") and GetDistance(object, lastEPos) < 100 then
 		EParticle = object
 	elseif object.name:find("LuxBlitz_nova") then
 		EParticle = nil
@@ -702,19 +702,27 @@ end
 
 function GetQPrediction(enemy)
 	if iLuxConfig.tpPro then
-		local tpProPosSub = tpProPos[_Q][enemy.networkID]
-		if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
-			local QPos = tpProPosSub.pos
-			if QPos then
-				local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
-				if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
-					return QPos
-				else
-					return nil
-				end
-			else
-				return nil
-			end
+		--local tpProPosSub = tpProPos[_Q][enemy.networkID]
+		--if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
+		--	local QPos = tpProPosSub.pos
+		--	if QPos then
+		--		local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
+		--		if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
+		--			return QPos
+		--		else
+		--			return nil
+		--		end
+		--	else
+		--		return nil
+		--	end
+		--else
+		--	return nil
+		--end
+		local QPos, _, QHitChance = tpProQ:GetPrediction(enemy)
+		if minHitChance ~= 0 and QHitChance < minHitChance then return nil end
+		local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
+		if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
+			return QPos
 		else
 			return nil
 		end
@@ -734,8 +742,10 @@ end
 
 function GetEPrediction(enemy)
 	if iLuxConfig.tpPro then
-		local tpProPosSub = tpProPos[_E][enemy.networkID]
-		return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+		--local tpProPosSub = tpProPos[_E][enemy.networkID]
+		--return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
+		local EPos, _, EHitChance = tpProE:GetPrediction(enemy)
+		if minHitChance == 0 or EHitChance > minHitChance then return EPos end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,EPos = tpE:GetPrediction(enemy)
@@ -747,15 +757,17 @@ end
 
 function GetRPrediction(enemy)
 	if iLuxConfig.tpPro then
-		local tpProPosSub = tpProPos[_E][enemy.networkID]
-		if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
-			return tpProPosSub.pos or nil
-		--else
-		--	local RPos, _, hitchance = tpProR:GetPrediction(enemy)
-		--	if RPos and (minHitChance == 0 or hitchance > minHitChance) then
-		--		return RPos
-		--	end
-		end
+		--local tpProPosSub = tpProPos[_E][enemy.networkID]
+		--if tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick then
+		--	return tpProPosSub.pos or nil
+		----else
+		----	local RPos, _, hitchance = tpProR:GetPrediction(enemy)
+		----	if RPos and (minHitChance == 0 or hitchance > minHitChance) then
+		----		return RPos
+		----	end
+		--end
+		local RPos, _, RHitChance = tpProR:GetPrediction(enemy)
+		if minHitChance == 0 or RHitChance > minHitChance then return RPos end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,RPos = tpR:GetPrediction(enemy)
@@ -833,6 +845,8 @@ end
 --[[ Garbage Bin ]]--
 
 function OnProcessSpell(object, spell)
+
+	if object.isMe and spell.name == "LuxLightStrikeKugel" then lastEPos = spell.startPos end
 
 	if object == nil or spell == nil or not object.valid then return end
 
