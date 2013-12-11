@@ -719,7 +719,7 @@ function GetQPrediction(enemy)
 		--	return nil
 		--end
 		local QPos, _, QHitChance = tpProQ:GetPrediction(enemy)
-		if minHitChance ~= 0 and QHitChance < minHitChance then return nil end
+		if minHitChance ~= 0 and QHitChance and QHitChance < minHitChance then return nil end
 		local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
 		if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
 			return QPos
@@ -745,7 +745,7 @@ function GetEPrediction(enemy)
 		--local tpProPosSub = tpProPos[_E][enemy.networkID]
 		--return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
 		local EPos, _, EHitChance = tpProE:GetPrediction(enemy)
-		if minHitChance == 0 or EHitChance > minHitChance then return EPos end
+		if minHitChance == 0 or (EHitChance and EHitChance > minHitChance) then return EPos end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,EPos = tpE:GetPrediction(enemy)
@@ -767,7 +767,7 @@ function GetRPrediction(enemy)
 		----	end
 		--end
 		local RPos, _, RHitChance = tpProR:GetPrediction(enemy)
-		if minHitChance == 0 or RHitChance > minHitChance then return RPos end
+		if minHitChance == 0 or (RHitChance and RHitChance > minHitChance) then return RPos end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,RPos = tpR:GetPrediction(enemy)
