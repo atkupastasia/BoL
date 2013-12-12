@@ -1,5 +1,7 @@
 --[[ WARNING: This script is still being developed. Shit is messed up, things are incomplete, don't even think about using this in a legit game. ]]--
 
+--[[ Degrec is a fool for trying to use it in a game. GG ]]--
+
 --[[ iKarma by Apple ]]--
 
 if myHero.charName ~= "Karma" then return end
@@ -26,7 +28,7 @@ local ERange, EDelay, ERadius = 800, 0.250, 300
 
 --[[ Script Variables ]]--
 
-local ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 1300, DAMAGE_MAGIC, false)
+local ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 1000, DAMAGE_MAGIC, false)
 local tpQ = TargetPredictionVIP(QRange, QSpeed, QDelay, QWidth)
 local tpQCollision = Collision(QRange, QSpeed, QDelay, QWidth)
 local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
@@ -161,9 +163,9 @@ function PewPew()
 			local LinkTimeLeft = 2000 - (LinkActive and GetTickCount() - LinkActive or 0)
 			local LinkDuration = myHero:GetSpellData(_W).level * 250 + 750
 			local DetonationTime = 1500 - 125 / (ts.target.ms * 0.75) + QDelay
-			if LinkTimeLeft + LinkDuration - DetonationTime > (myHero:GetSpellData(_Q).cd * (1 - myHero.cdr)) * 1000 then
+			if LinkTimeLeft + LinkDuration - DetonationTime > (myHero:GetSpellData(_Q).cd * (1 + myHero.cdr)) * 1000 then
 				CastSpell(_Q, QPos.x, QPos.z)
-			elseif myHero:GetSpellData(_R).currentCd > myHero:GetSpellData(_Q).cd * (1 - myHero.cdr) then
+			elseif myHero:GetSpellData(_R).currentCd > myHero:GetSpellData(_Q).cd * (1 + myHero.cdr) then
 				CastSpell(_Q, QPos.x, QPos.z)
 			end
 		end
