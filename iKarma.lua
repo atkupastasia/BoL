@@ -110,6 +110,7 @@ function OnTick()
 	if iKarmaConfig.AutoJungle then AutoJungle() end
 	if iKarmaConfig.pewpew then PewPew() end
 	if iKarmaConfig.harass then Poke() end
+	if iKarmaConfig.AutoHeal then AutoHeal() end
 
 	if (iKarmaConfig.pewpew or iKarmaConfig.harass) and not (_G.AutoCarry and _G.AutoCarry.MainMenu.AutoCarry) then
 		if iKarmaConfig.orbwalk then
