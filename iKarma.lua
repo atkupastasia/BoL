@@ -22,7 +22,7 @@ local minHitChance = 0.3
 
 --[[ Constants ]]--
 
-local QRange, QSpeed, QDelay, QWidth, QRadius, QDetRadius, QDetTime = 950, 900, 0.250, 90, 50, 125, 1500
+local QRange, QSpeed, QDelay, QWidth, QRadius, QDetRadius, QDetTime = 950, 900, 0.250, 90, 75, 125, 1500
 local WRange, WDelay, WLockTime = 675, 0.250, 2000
 local ERange, EDelay, ERadius = 800, 0.250, 300
 
@@ -65,14 +65,20 @@ function OnLoad()
 	iKarmaConfig:addParam("moveToMouse", "Move To Mouse", SCRIPT_PARAM_ONOFF, false)
 	iKarmaConfig:addParam("IndirectQ", "Indirect Q", SCRIPT_PARAM_ONOFF, true)
 	iKarmaConfig:addParam("RangedQ", "Q out of W range", SCRIPT_PARAM_ONOFF, true)
+	iKarmaConfig:addParam("ComboHeal", "Heal In Combo", SCRIPT_PARAM_ONOFF, true)
 
 	iKarmaConfig:addParam("sep", "-=[ Auto Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iKarmaConfig:addParam("AutoKS", "Auto Killsteal", SCRIPT_PARAM_ONOFF, true)
 	iKarmaConfig:addParam("AutoJungle", "Auto Buffsteal", SCRIPT_PARAM_ONOFF, true)
+	iKarmaConfig:addParam("AutoHeal", "Auto Heal", SCRIPT_PARAM_ONOFF, true)
+
 
 	iKarmaConfig:addParam("sep", "-=[ Other Settings ]=-", SCRIPT_PARAM_INFO, "")
 	iKarmaConfig:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
 	iKarmaConfig:addParam("damageText", "Kill Text", SCRIPT_PARAM_ONOFF, true)
+	iKarmaConfig:addParam("HealPerc", "Health Percentage", SCRIPT_PARAM_SLICE, 20, 1, 100, 0)
+	iKarmaConfig:addParam("DangerHealPerc", "Emergency Heal", SCRIPT_PARAM_SLICE, 10, 1, 100, 0)
+
 
 	iKarmaConfig:permaShow("pewpew")
 	iKarmaConfig:permaShow("harass")
@@ -134,7 +140,7 @@ function OnSendPacket(packet)
 		local networkID = packet:DecodeF()
 		local spell = packet:Decode1()
 		if networkID == myHero.networkID and spell == 1 and myHero:CanUseSpell(_W) == READY then
-			LinkActive = false
+			LinkActive = GetTickCount()
 		end
 	end
 end
@@ -152,6 +158,76 @@ end
 --[[ Combat Functions ]]--
 
 function PewPew()
+	if not ValidTarget(ts.target) then return end
+
+	local Damage = DamageResults[ts.target.networkID]
+	local myMS, tarMS = myHero.ms, ts.target.ms
+	local LinkTimeLeft = 2000 - (LinkActive and GetTickCount() - LinkActive or 0)
+	local LinkDamages = LinkActive and math.ceil(LinkTimeLeft / 2000 * 3) or 0
+	local LinkDuration = myHero:GetSpellData(_W).level * 250 + 750
+	local DetonationTime = 1500 - (125 / (tarMS * 0.75) - QDelay) * 1000
+	local DetTimeFrame = LinkTimeLeft + LinkDuration - DetonationTime
+	local QCD, CurQCD, CurRCD, WCD = myHero:GetSpellData(_Q).cd * (1 + myHero.cdr) * 1000, myHero:GetSpellData(_Q).currentCd * 1000, myHero:GetSpellData(_R).currentCd * 1000, myHero:GetSpellData(_W).cd * (1 + myHero.cdr) * 1000
+	local QPos = GetQPrediction(ts.target) or nil
+	local TarDist, QDist = GetDistance(ts.target), (QPos and GetDistance(QPos))
+
+	if iKarmaConfig.ComboHeal and myHero:CanUseSpell(_R) == READY and myHero:CanUseSpell(_W) == READY and iKarmaConfig.DangerHealPerc / 100 > myHero.health / myHero.maxHealth then
+		Heal()
+	elseif myHero.mana < myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_W).mana then
+		if myHero:CanUseSpell(_R) == READY then
+			if iKarmaConfig.ComboHeal and iKarmaConfig.HealPerc / 100 > myHero.health / myHero.maxHealth then
+				Heal()
+			elseif myHero:CanUseSpell(_Q) == READY then
+				CastSpell(_R)
+				CastSpell(_Q, QPos.x, QPos.z)
+			end
+		elseif myHero:CanUseSpell(_Q) == READY then
+			CastSpell(_Q, QPos.x, QPos.z)
+		end
+	elseif myHero:CanUseSpell(_Q) == READY then
+		if QPos and QRange > QDist then
+			if myHero:CanUseSpell(_W) == READY and myHero:CanUseSpell(_R) == READY then
+				CastSpell(_Q, QPos.x, QPos.z)
+			elseif not LinkActive then
+				if Damage.Q > ts.target.health then
+					CastSpell(_Q, QPos.x, QPos.z)
+				elseif myHero:CanUseSpell(_R) == READY then
+					if not ts.target.canMove or Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 then
+						CastSpell(_R)
+						CastSpell(_Q, QPos.x, QPos.z)
+					elseif myHero:CanUseSpell(_W) ~= READY then
+						CastSpell(_Q, QPos.x, QPos.z)
+					end
+				elseif CurRCD > QCD then
+					CastSpell(_Q, QPos.x, QPos.z)
+				elseif Damage.Q * CurRCD / QCD > Damage.QUlt - Damage.Q then
+					CastSpell(_Q, QPos.x, QPos.z)
+				elseif iKarmaConfig.RangedQ and TarDist > WRange and QDist > TarDist then
+					if tarMS > myMS then
+						CastSpell(_Q, QPos.x, QPos.z)
+					else
+						local SlowedCatchTime = ((TarDist - WRange) / (myMS - tarMS * 0.75) + QDelay + GetDistance(ts.target, QPos) / tarMS) * 1000
+						if DetTimeFrame + SlowedCatchTime > QCD then
+							CastSpell(_Q, QPos.x, QPos.z)
+						end
+					end
+				end
+			elseif myHero:CanUseSpell(_R) ~= READY and CurRCD - LinkDamages * 1000 - LinkTimeLeft > DetTimeFrame then
+				CastSpell(_Q, QPos.x, QPos.z)
+			end
+		end
+	elseif myHero:CanUseSpell(_W) == READY then
+		if iKarmaConfig.ComboHeal and myHero:CanUseSpell(_R) == READY and iKarmaConfig.HealPerc / 100 > myHero.health / myHero.maxHealth then
+			Heal()
+		elseif myHero:CanUseSpell(_R) == READY or CurRCD - 5000 < DetTimeFrame or CurRCD > WCD then
+			if CurQCD < DetTimeFrame then
+				CastSpell(_W, ts.target)
+			end
+		end
+	end
+end
+
+function PewPew_OLD()
 	if not ValidTarget(ts.target) then return end
 
 	if myHero:CanUseSpell(_W) == READY and GetDistance(ts.target) < WRange then
@@ -180,7 +256,7 @@ function PewPew()
 				if Damage.Q > ts.target.health then
 					CastSpell(_Q, QPos.x, QPos.z)
 					return
-				if Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 or (myHero:CanUseSpell(_W) ~= READY and LinkActive == nil) then
+				elseif Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 or (myHero:CanUseSpell(_W) ~= READY and LinkActive == nil) then
 					if myHero:CanUseSpell(_R) == READY then
 						CastSpell(_R)
 					end
@@ -263,6 +339,36 @@ function AutoJungle()
 	end
 end
 
+function AutoHeal()
+	if myHero:CanUseSpell(_W) == READY and myHero:CanUseSpell(_R) == READY then
+		if myHero.mana < myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_W).mana then
+			if iKarmaConfig.DangerHealPerc / 100 > myHero.health / myHero.maxHealth then
+				Heal()
+			end
+		elseif iKarmaConfig.HealPerc / 100 > myHero.health / myHero.maxHealth then
+			Heal()
+		end
+	end
+end
+
+function Heal()
+	if ValidTarget(ts.target, WRange) then
+		CastSpell(_R)
+		CastSpell(_W, ts.target)
+	else
+		local BestTarget = nil
+		for _, enemy in ipairs(GetEnemyHeroes()) do
+			if ValidTarget(enemy, WRange) and (not BestTarget or BestTarget.health > enemy.health) then
+				BestTarget = enemy
+			end
+		end
+		if BestTarget then
+			CastSpell(_R)
+			CastSpell(_W, BestTarget)
+		end
+	end
+end
+
 --[[ Predictions and Calculations ]]--
 
 function GetQPrediction(enemy)
@@ -315,10 +421,10 @@ end
 function CircleLineIntersection(PointA, PointB, Center, Radius, Width)
 	local baX = PointB.x - PointA.x
 	local baY = PointB.z - PointA.z
+	local a = baX * baX + baY * baY
+
 	local caX = Center.x - PointA.x
 	local caY = Center.z - PointA.z
-	
-	local a = baX * baX + baY * baY
 	local b = (baX * caX + baY * caY) / a
 	
 	local disc = b * b - (caX * caX + caY * caY - Radius * Radius) / a;
