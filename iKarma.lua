@@ -36,6 +36,7 @@ local tpProQ = ProdictManager and tpPro:AddProdictionObject(_Q, QRange, QSpeed, 
 local iOW = iOrbWalker(550, true)
 
 local DamageResults = {}
+local updateTextTimers = {}
 local UltActive = false
 local LinkActive = nil
 
