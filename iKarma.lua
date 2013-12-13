@@ -180,14 +180,14 @@ function PewPew()
 				if Damage.Q > ts.target.health then
 					CastSpell(_Q, QPos.x, QPos.z)
 					return
-				elseif myHero:CanUseSpell(_R) == READY then
-					if Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 or (myHero:CanUseSpell(_W) ~= READY and LinkActive == nil) then
+				if Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 or (myHero:CanUseSpell(_W) ~= READY and LinkActive == nil) then
+					if myHero:CanUseSpell(_R) == READY then
 						CastSpell(_R)
-						CastSpell(_Q, QPos.x, QPos.z)
-						return
-					elseif DetTimeFrame > QCD then
-						CastSpell(_Q, QPos.x, QPos.z)
 					end
+					CastSpell(_Q, QPos.x, QPos.z)
+					return
+				elseif DetTimeFrame > QCD then
+					--CastSpell(_Q, QPos.x, QPos.z)
 				end
 		
 				if myHero:CanUseSpell(_E) == READY and LinkActive and tarMS > myMS and QDist > TarDist then
