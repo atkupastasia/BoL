@@ -134,7 +134,7 @@ function OnSendPacket(packet)
 		local networkID = packet:DecodeF()
 		local spell = packet:Decode1()
 		if networkID == myHero.networkID and spell == 1 and myHero:CanUseSpell(_W) == READY then
-			LinkActive = GetTickCount()
+			LinkActive = false
 		end
 	end
 end
@@ -158,54 +158,58 @@ function PewPew()
 		CastSpell(_W, ts.target)
 	end
 
-	local QPos = myHero:CanUseSpell(_Q) == READY and GetQPrediction(ts.target) or nil
-	if QPos then
-		local TarDist, QDist = GetDistance(ts.target), GetDistance(QPos)
-		if QDist < QRange then
-			local Damage = DamageResults[ts.target.networkID]
-			local myMS, tarMS = myHero.ms, ts.target.ms
-			local LinkTimeLeft = 2000 - (LinkActive and GetTickCount() - LinkActive or 0)
-			local LinkDamages = LinkActive and math.ceil(LinkTimeLeft / 2000 * 3) or 0
-			local LinkDuration = myHero:GetSpellData(_W).level * 250 + 750
-			local DetonationTime = 1500 - 125 / (tarMS * 0.75) + QDelay
-			local DetTimeFrame = LinkTimeLeft + LinkDuration - DetonationTime
-			local QCD, CurRCD = (myHero:GetSpellData(_Q).cd * (1 + myHero.cdr)) * 1000, (myHero:GetSpellData(_R).currentCd - LinkDamages) * 1000
-	
-			if Damage.Q > ts.target.health then
+	if myHero:CanUseSpell(_Q) == READY then
+		local QPos = GetQPrediction(ts.target) or nil
+		if QPos then
+			local TarDist, QDist = GetDistance(ts.target), GetDistance(QPos)
+			if myHero:CanUseSpell(_R) == READY and not ts.target.canMove then
+				CastSpell(_R)
 				CastSpell(_Q, QPos.x, QPos.z)
 				return
-			elseif myHero:CanUseSpell(_R) == READY then
-				if Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 or (myHero:CanUseSpell(_W) ~= READY and not LinkActive) then
-					CastSpell(_R)
+			end
+			if QDist < QRange then
+				local Damage = DamageResults[ts.target.networkID]
+				local myMS, tarMS = myHero.ms, ts.target.ms
+				local LinkTimeLeft = 2000 - (LinkActive and GetTickCount() - LinkActive or 0)
+				local LinkDamages = LinkActive and math.ceil(LinkTimeLeft / 2000 * 3) or 0
+				local LinkDuration = myHero:GetSpellData(_W).level * 250 + 750
+				local DetonationTime = 1500 - (125 / (tarMS * 0.75) - QDelay) * 1000
+				local DetTimeFrame = LinkTimeLeft + LinkDuration - DetonationTime
+				local QCD, CurRCD = (myHero:GetSpellData(_Q).cd * (1 + myHero.cdr)) * 1000, (myHero:GetSpellData(_R).currentCd - LinkDamages) * 1000
+		
+				if Damage.Q > ts.target.health then
 					CastSpell(_Q, QPos.x, QPos.z)
 					return
-				elseif not ts.target.canMove then
-					CastSpell(_R)
-					CastSpell(_Q, ts.target.x, ts.target.z)
-				else
-					if DetTimeFrame > QCD then
+				elseif myHero:CanUseSpell(_R) == READY then
+					if Damage.QUlt > ts.target.health or myHero:GetSpellData(_W).level == 0 or (myHero:CanUseSpell(_W) ~= READY and LinkActive == nil) then
+						CastSpell(_R)
+						CastSpell(_Q, QPos.x, QPos.z)
+						return
+					elseif DetTimeFrame > QCD then
 						CastSpell(_Q, QPos.x, QPos.z)
 					end
 				end
-			end
-	
-			if LinkActive and tarMS > myMS and QDist > TarDist then
-				local CurLinkLeft = (WRange - TarDist) / (myMS - tarMS)
-				if LinkTimeLeft > CurLinkLeft and CurLinkLeft < QDelay * 1000 or LinkTimeLeft % 666  > CurLinkLeft then
-					CastSpell(_Q, QPos.x, QPos.z)
+		
+				if myHero:CanUseSpell(_E) == READY and LinkActive and tarMS > myMS and QDist > TarDist then
+					local CurLinkLeft = (WRange - TarDist) / (myMS - tarMS) * 1000
+					if LinkTimeLeft > CurLinkLeft and CurLinkLeft < QDelay * 1000 or LinkTimeLeft % 666  > CurLinkLeft then
+						CastSpell(_E, myHero)
+					end
 				end
-			elseif myHero:CanUseSpell(_R) ~= READY then
-				if CurRCD > QCD then
-					CastSpell(_Q, QPos.x, QPos.z)
-				elseif Damage.Q * CurRCD / QCD > Damage.QUlt - Damage.Q then
-					CastSpell(_Q, QPos.x, QPos.z)
-				elseif iKarmaConfig.RangedQ and TarDist > WRange and QDist > TarDist then
-					if tarMS > myMS then
+
+				if myHero:CanUseSpell(_R) ~= READY and not LinkActive then
+					if CurRCD > QCD then
 						CastSpell(_Q, QPos.x, QPos.z)
-					else
-						local SlowedCatchTime = (TarDist - WRange) / (myMS - tarMS * 0.75) + QDelay  + GetDistance(ts.target, QPos) / tarMS 
-						if DetTimeFrame + SlowedCatchTime > QCD then
+					elseif Damage.Q * CurRCD / QCD > Damage.QUlt - Damage.Q then
+						CastSpell(_Q, QPos.x, QPos.z)
+					elseif iKarmaConfig.RangedQ and TarDist > WRange and QDist > TarDist then
+						if tarMS > myMS then
 							CastSpell(_Q, QPos.x, QPos.z)
+						else
+							local SlowedCatchTime = ((TarDist - WRange) / (myMS - tarMS * 0.75) + QDelay + GetDistance(ts.target, QPos) / tarMS) * 1000
+							if DetTimeFrame + SlowedCatchTime > QCD then
+								CastSpell(_Q, QPos.x, QPos.z)
+							end
 						end
 					end
 				end
@@ -252,7 +256,7 @@ function AutoJungle()
 	for _, jungleMob in pairs(jungleObjects) do
 		if jungleMob and jungleMob.isCamp then
 			local tempMob = jungleMob.object
-			if ValidTarget(tempMob, QRange) and myHero:CalcMagicDamage(tempMob, 40 + 45 * myHero:GetSpellData(_Q).level + 0.6 * MyAP) >  tempMob.health then
+			if ValidTarget(tempMob, QRange) and myHero:CalcMagicDamage(tempMob, 40 + 45 * myHero:GetSpellData(_Q).level + 0.6 * myHero.ap) >  tempMob.health then
 				CastSpell(_Q, tempMob.x, tempMob.z)
 			end
 		end
