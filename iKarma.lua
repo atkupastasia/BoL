@@ -78,6 +78,7 @@ function OnLoad()
 	iKarmaConfig:addParam("damageText", "Kill Text", SCRIPT_PARAM_ONOFF, true)
 	iKarmaConfig:addParam("HealPerc", "Health Percentage", SCRIPT_PARAM_SLICE, 20, 1, 100, 0)
 	iKarmaConfig:addParam("DangerHealPerc", "Emergency Heal", SCRIPT_PARAM_SLICE, 10, 1, 100, 0)
+	iKarmaConfig:addParam("DegrecCombo", "Degrec Combo (Fools Only)", SCRIPT_PARAM_ONOFF, false)
 
 
 	iKarmaConfig:permaShow("pewpew")
@@ -160,6 +161,7 @@ end
 
 function PewPew()
 	if not ValidTarget(ts.target) then return end
+	if iKarmaConfig.DegrecCombo then return DegrecCombo() end
 
 	local Damage = DamageResults[ts.target.networkID]
 	local myMS, tarMS = myHero.ms, ts.target.ms
@@ -169,7 +171,7 @@ function PewPew()
 	local DetonationTime = 1500 - (125 / (tarMS * 0.75) - QDelay) * 1000
 	local DetTimeFrame = LinkTimeLeft + LinkDuration - DetonationTime
 	local QCD, CurQCD, CurRCD, WCD = myHero:GetSpellData(_Q).cd * (1 + myHero.cdr) * 1000, myHero:GetSpellData(_Q).currentCd * 1000, myHero:GetSpellData(_R).currentCd * 1000, myHero:GetSpellData(_W).cd * (1 + myHero.cdr) * 1000
-	local QPos = GetQPrediction(ts.target) or nil
+	local QPos = GetQPrediction(ts.target)
 	local TarDist, QDist = GetDistance(ts.target), (QPos and GetDistance(QPos))
 
 	if iKarmaConfig.ComboHeal and myHero:CanUseSpell(_R) == READY and myHero:CanUseSpell(_W) == READY and iKarmaConfig.DangerHealPerc / 100 > myHero.health / myHero.maxHealth then
@@ -225,6 +227,21 @@ function PewPew()
 				CastSpell(_W, ts.target)
 			end
 		end
+	end
+end
+
+function DegrecCombo()
+	if myHero:CanUseSpell(_Q) == READY then
+		local QPos = GetQPrediction(ts.target)
+		if QPos and GetDistance(QPos) < QRange then
+			if myHero:CanUseSpell(_R) == READY then
+				CastSpell(_R)
+			end
+			CastSpell(_Q, QPos.x, QPos.z)
+		end
+	end
+	if myHero:CanUseSpell(_W) == READY and GetDistance(ts.target) < WRange then
+		CastSpell(_W, ts.target)
 	end
 end
 
