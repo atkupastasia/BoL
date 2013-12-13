@@ -191,7 +191,7 @@ function PewPew()
 	
 			if LinkActive and tarMS > myMS and QDist > TarDist then
 				local CurLinkLeft = (WRange - TarDist) / (myMS - tarMS)
-				if LinkTimeLeft > CurLinkLeft and CurLinkLeft < QDelay or LinkTimeLeft % 666  > CurLinkLeft then
+				if LinkTimeLeft > CurLinkLeft and CurLinkLeft < QDelay * 1000 or LinkTimeLeft % 666  > CurLinkLeft then
 					CastSpell(_Q, QPos.x, QPos.z)
 				end
 			elseif myHero:CanUseSpell(_R) ~= READY then
@@ -203,7 +203,7 @@ function PewPew()
 					if tarMS > myMS then
 						CastSpell(_Q, QPos.x, QPos.z)
 					else
-						local SlowedCatchTime = (TarDist - WRange) / (myMS - tarMS * 0.75) + (QDelay + GetDistance(ts.target, QPos)) / tarMS
+						local SlowedCatchTime = (TarDist - WRange) / (myMS - tarMS * 0.75) + QDelay  + GetDistance(ts.target, QPos) / tarMS 
 						if DetTimeFrame + SlowedCatchTime > QCD then
 							CastSpell(_Q, QPos.x, QPos.z)
 						end
@@ -252,7 +252,7 @@ function AutoJungle()
 	for _, jungleMob in pairs(jungleObjects) do
 		if jungleMob and jungleMob.isCamp then
 			local tempMob = jungleMob.object
-			if ValidTarget(tempMob, QRange) and myHero:CalcMagicDamage(tempMob, 40 + 45 * QLevel + 0.6 * MyAP) >  tempMob.health then
+			if ValidTarget(tempMob, QRange) and myHero:CalcMagicDamage(tempMob, 40 + 45 * myHero:GetSpellData(_Q).level + 0.6 * MyAP) >  tempMob.health then
 				CastSpell(_Q, tempMob.x, tempMob.z)
 			end
 		end
