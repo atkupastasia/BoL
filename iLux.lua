@@ -57,7 +57,7 @@ local Testing = false -- Warning: Do not enable. It turns your computer into a f
 
 --[[ Constants ]]--
 
-local QRange, QSpeed, QDelay, QWidth = 1150, 1175, 0.250, 80
+local QRange, QSpeed, QDelay, QWidth = 1150, 1175, 0.250, 85
 local WRange = 1050
 local ERange, ESpeed, EDelay, ERadius = 1100, 1300, 0.150, 275
 local RRange, RSpeed, RDelay, RWidth = 3340, math.huge, 0.700, 200
@@ -78,9 +78,9 @@ local tpProPos = {
 	[_E] = {},
 	[_R] = {}, }
 local tpPro = ProdictManager and ProdictManager.GetInstance() or nil
-local tpProQ = tpPro and tpPro:AddProdictionObject(_Q, QRange, QSpeed, QDelay, QWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_Q, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_Q][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
-local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, ERadius*2, myHero, (Testing and function(unit, pos, spell) CastSpell(_E, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_E][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
-local tpProR = tpPro and tpPro:AddProdictionObject(_R, RRange, RSpeed, RDelay, RWidth, myHero, (Testing and function(unit, pos, spell) CastSpell(_R, pos.x, pos.z) end or function(unit, pos, spell) if not unit or not pos then return end tpProPos[_R][unit.networkID] = {pos = pos, updateTick = GetTickCount()} end)) or nil
+local tpProQ = tpPro and tpPro:AddProdictionObject(_Q, QRange, QSpeed, QDelay, QWidth, myHero) or nil
+local tpProE = tpPro and tpPro:AddProdictionObject(_E, ERange, ESpeed, EDelay, ERadius*2, myHero) or nil
+local tpProR = tpPro and tpPro:AddProdictionObject(_R, RRange, RSpeed, RDelay, RWidth, myHero) or nil
 local iOW = iSAC and iOrbWalker(550, true) or nil
 
 local igniteSlot = nil
@@ -91,8 +91,10 @@ local TriggerEOnLandFarm = false
 local enemyMinions = {}
 local updateTextTimers = {}
 local pingTimer = {}
-local CurrentTick = GetTickCount()
 local FriendlySmite = {}
+local Debuffed = {}
+local CurrentTick = GetTickCount()
+local TargetHaveBuff_Old = TargetHaveBuff
 
 local items = {
 	ZHONYAS = {id = 3157, slot = nil, ready = false},
@@ -193,11 +195,11 @@ function OnTick()
 		AutoIgnite()
 		AutoUlt()
 		if ValidTarget(ts.target) then
-			if iLuxConfig.tpPro then
-				tpProQ:EnableTarget(ts.target, true)
-				tpProE:EnableTarget(ts.target, true)
-				tpProR:EnableTarget(ts.target, true)
-			end
+			--if iLuxConfig.tpPro then
+			--	tpProQ:EnableTarget(ts.target, true)
+			--	tpProE:EnableTarget(ts.target, true)
+			--	tpProR:EnableTarget(ts.target, true)
+			--end
 			if iLuxConfig.pewpew then 
 				if iLuxConfig.tpPro and Testing then 
 					newPewPewTesting()
@@ -234,7 +236,7 @@ function OnTick()
 end
 
 function OnCreateObj(object)
-	if object.name:find("LuxLightstrike_tar") and GetDistance(object, lastEPos) < 100 then
+	if object.name:find("LuxLightstrike_tar_green") then
 		EParticle = object
 	elseif object.name:find("LuxBlitz_nova") then
 		EParticle = nil
@@ -306,6 +308,18 @@ function OnDraw()
 				end
 			end
 		end
+	end
+end
+
+function OnGainBuff(unit, buff)
+	if buff.name == "luxilluminatingfraulein" then
+		Debuffed[unit.networkID] = true
+	end
+end
+
+function OnLoseBuff(unit, buff)
+	if buff.name == "luxilluminatingfraulein" then
+		Debuffed[unit.networkID] = nil
 	end
 end
 
@@ -632,7 +646,7 @@ function AutoUlt()
 				end
 				--if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt and (not ts.target or (enemy.networkID ~= ts.target.networkID or (not EParticle or myHero:CanUseSpell(_E) == READY))) then
 				if ValidTarget(enemy, RRange) and iLuxConfig.AutoUlt then
-					if iLuxConfig.tpPro then tpProR:EnableTarget(enemy, true) end
+					--if iLuxConfig.tpPro then tpProR:EnableTarget(enemy, true) end
 					local RPos = GetRPrediction(enemy)
 					if RPos then
 						CastSpell(_R, RPos.x, RPos.z)
@@ -652,7 +666,7 @@ function AutoTriggerE()
 	else
 		local count = 0
 		for i, enemy in ipairs(GetEnemyHeroes()) do
-			if ValidTarget(enemy) and GetDistance(enemy, EParticle) < ERadius then
+			if ValidTarget(enemy) and GetDistance(enemy, EParticle) + GetDistance(enemy, enemy.minBBox)/2 < ERadius then
 				if TriggerEOnLand then
 					CastSpell(_E)
 					return
@@ -719,7 +733,7 @@ function GetQPrediction(enemy)
 		--	return nil
 		--end
 		local QPos, _, QHitChance = tpProQ:GetPrediction(enemy)
-		if minHitChance ~= 0 and QHitChance and QHitChance < minHitChance then return nil end
+		if minHitChance ~= 0 and QHitChance and QHitChance < minHitChance or GetDistance(QPos) > QRange then return nil end
 		local willCollide, collideArray = tpQCollision:GetMinionCollision(myHero, QPos)
 		if not willCollide or (iLuxConfig.QWithSingleCollide and #collideArray <= 1) then
 			return QPos
@@ -745,7 +759,7 @@ function GetEPrediction(enemy)
 		--local tpProPosSub = tpProPos[_E][enemy.networkID]
 		--return tpProPosSub and CurrentTick - tpProPosSub.updateTick < tpProMaxTick and tpProPosSub.pos or nil
 		local EPos, _, EHitChance = tpProE:GetPrediction(enemy)
-		if minHitChance == 0 or (EHitChance and EHitChance > minHitChance) then return EPos end
+		if minHitChance == 0 or not EHitChance or EHitChance > minHitChance or GetDistance(EPos) < ERange then return EPos end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpE:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,EPos = tpE:GetPrediction(enemy)
@@ -767,7 +781,7 @@ function GetRPrediction(enemy)
 		----	end
 		--end
 		local RPos, _, RHitChance = tpProR:GetPrediction(enemy)
-		if minHitChance == 0 or (RHitChance and RHitChance > minHitChance) then return RPos end
+		if minHitChance == 0 or not RHitChance or RHitChance > minHitChance or GetDistance(RPos) < RRange then return RPos end
 	elseif VIP_USER then
 		if minHitChance ~= 0 and tpR:GetHitChance(enemy) < minHitChance then return nil end
 		local _,_,RPos = tpR:GetPrediction(enemy)
@@ -843,6 +857,14 @@ function damageText()
 end
 
 --[[ Garbage Bin ]]--
+
+if VIP_USER then
+	function TargetHaveBuff(BuffName, unit)
+		return BuffName ~= "luxilluminatingfraulein" and TargetHaveBuff_Old(BuffName, unit) or Debuffed[unit.networkID]
+	end
+else
+	TargetHaveBuff = TargetHaveBuff_Old
+end
 
 function OnProcessSpell(object, spell)
 
