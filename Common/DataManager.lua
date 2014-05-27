@@ -116,7 +116,9 @@ function DataManager_newindex_main(table, key, value, isChildCall)
 	_dataManagerProxy[table.filePath][key] = value
 
 	if type(value) == "table" then
-		_dataManagerProxy[value] = _dataManagerProxy[value] or {}
+		if not _dataManagerProxy[value] then
+			_dataManagerProxy[value] = {}
+		end
 		for k, v in pairs(value) do
 			value[k] = nil
 			_dataManagerProxy[value][k] = v
@@ -150,7 +152,9 @@ function DataManager_newindex_sub(table, key, value, isChildCall)
 	_dataManagerProxy[table][key] = value
 
 	if type(value) == "table" then
-		_dataManagerProxy[value] = _dataManagerProxy[value] or {}
+		if not _dataManagerProxy[value] then
+			_dataManagerProxy[value] = {}
+		end
 		for k, v in pairs(value) do
 			value[k] = nil
 			_dataManagerProxy[value][k] = v
